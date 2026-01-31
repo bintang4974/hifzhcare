@@ -19,11 +19,8 @@ return new class extends Migration
 
             $table->string('name');
             $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
             $table->string('phone', 20)->unique()->nullable();
             $table->string('password');
-            $table->rememberToken();
-            $table->timestamps();
 
             // User Type & Status
             $table->enum('user_type', ['super_admin', 'admin', 'ustadz', 'santri', 'wali', 'stakeholder', 'general'])->default('general');

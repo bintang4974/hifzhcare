@@ -11,26 +11,26 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('class_santris', function (Blueprint $table) {
+        Schema::create('class_ustadz', function (Blueprint $table) {
             $table->id();
-            
+
             // Tenant
             $table->foreignId('pesantren_id')->constrained()->onDelete('cascade');
-            
+
             // Relationships
             $table->foreignId('class_id')->constrained('classes')->onDelete('cascade');
-            $table->foreignId('santri_profile_id')->constrained('santri_profiles')->onDelete('cascade');
-            
-            // Enrollment Info
-            $table->date('enrolled_date')->default(now());
-            $table->enum('status', ['active', 'graduated', 'dropped'])->default('active');
-            
+            $table->foreignId('ustadz_profile_id')->constrained('ustadz_profiles')->onDelete('cascade');
+
+            // Assignment Info
+            $table->date('assigned_date')->default(now());
+            $table->enum('status', ['active', 'inactive'])->default('active');
+
             $table->timestamps();
-            
+
             // Constraints & Indexes
-            $table->unique(['class_id', 'santri_profile_id'], 'unique_class_santri');
+            $table->unique(['class_id', 'ustadz_profile_id'], 'unique_class_ustadz');
             $table->index(['pesantren_id', 'class_id']);
-            $table->index(['pesantren_id', 'santri_profile_id']);
+            $table->index(['pesantren_id', 'ustadz_profile_id']);
         });
     }
 
@@ -39,6 +39,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('class_santris');
+        Schema::dropIfExists('class_ustadzs');
     }
 };
