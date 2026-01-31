@@ -13,12 +13,36 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
+
+            // Tenant Relationship (nullable for general users)
+            $table->foreignId('pesantren_id')->nullable()->constrained()->onDelete('cascade');
+
             $table->string('name');
             $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
+            $table->string('phone', 20)->unique()->nullable();
             $table->string('password');
+
+            // User Type & Status
+            $table->enum('user_type', ['super_admin', 'admin', 'ustadz', 'santri', 'wali', 'stakeholder', 'general'])->default('general');
+            $table->enum('status', ['pending', 'active', 'inactive', 'graduated'])->default('pending');
+
+            // Pro Features (for general users)
+            $table->boolean('is_pro')->default(false);
+            $table->timestamp('pro_expired_at')->nullable();
+
+            // Auth
+            $table->timestamp('email_verified_at')->nullable();
             $table->rememberToken();
+
             $table->timestamps();
+            $table->softDeletes();
+
+            // Indexes untuk performance
+            $table->index(['pesantren_id', 'user_type']);
+            $table->index(['pesantren_id', 'status']);
+            $table->index(['user_type', 'status']);
+            $table->index('email');
+            $table->index('phone');
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
