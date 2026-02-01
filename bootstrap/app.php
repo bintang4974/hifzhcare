@@ -11,7 +11,17 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // Register middleware aliases
+        $middleware->alias([
+            'tenant' => \App\Http\Middleware\TenantMiddleware::class,
+            'check.quota' => \App\Http\Middleware\CheckQuotaMiddleware::class,
+            'check.pro' => \App\Http\Middleware\CheckProMiddleware::class,
+        ]);
+        
+        // Apply tenant middleware to web routes
+        $middleware->web(append: [
+            \App\Http\Middleware\TenantMiddleware::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
