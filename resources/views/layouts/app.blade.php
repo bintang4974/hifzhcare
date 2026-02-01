@@ -77,17 +77,17 @@
                                 </x-nav-link>
                             @endcan
 
-                            @can('manage_users')
+                            {{-- @can('manage_users')
                                 <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
                                     <i class="fas fa-users mr-2"></i>{{ __('Pengguna') }}
                                 </x-nav-link>
-                            @endcan
+                            @endcan --}}
 
-                            @can('view_reports')
+                            {{-- @can('view_reports')
                                 <x-nav-link :href="route('reports.index')" :active="request()->routeIs('reports.*')">
                                     <i class="fas fa-chart-bar mr-2"></i>{{ __('Laporan') }}
                                 </x-nav-link>
-                            @endcan
+                            @endcan --}}
                         </div>
                     </div>
 
@@ -115,13 +115,15 @@
                             <div x-show="open" @click.away="open = false"
                                 class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50"
                                 style="display: none;">
-                                <a href="{{ route('profile.edit') }}"
+                                {{-- <a href="{{ route('profile.edit') }}" --}}
+                                <a href=""
                                     class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                     <i class="fas fa-user mr-2"></i>Profile
                                 </a>
 
                                 @can('edit_pesantren_settings')
-                                    <a href="{{ route('settings.pesantren') }}"
+                                    {{-- <a href="{{ route('settings.pesantren') }}" --}}
+                                    <a href=""
                                         class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                         <i class="fas fa-cog mr-2"></i>Settings
                                     </a>
@@ -172,9 +174,9 @@
                     </div>
 
                     <div class="mt-3 space-y-1">
-                        <x-responsive-nav-link :href="route('profile.edit')">
+                        {{-- <x-responsive-nav-link :href="route('profile.edit')">
                             <i class="fas fa-user mr-2"></i>{{ __('Profile') }}
-                        </x-responsive-nav-link>
+                        </x-responsive-nav-link> --}}
 
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
