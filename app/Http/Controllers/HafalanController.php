@@ -45,6 +45,21 @@ class HafalanController extends Controller
         $query = Hafalan::with(['user:id,name', 'class:id,name', 'verifiedBy:id,name', 'audios'])
             ->select('hafalans.*');
 
+        // If user is ustadz, limit to hafalans for classes they teach
+        $user = auth()->user();
+        if ($user && method_exists($user, 'isUstadz') && $user->isUstadz()) {
+            $ustadzProfileId = $user->ustadzProfile?->id;
+            if ($ustadzProfileId) {
+                $query->whereHas('class.activeUstadz', function ($q) use ($ustadzProfileId) {
+                    $q->where('ustadz_profile_id', $ustadzProfileId)
+                        ->where('class_ustadz.status', 'active');
+                });
+            } else {
+                // No profile found — return empty
+                $query->whereRaw('0 = 1');
+            }
+        }
+
         // Apply filters
         if ($request->filled('status')) {
             $query->where('status', $request->status);

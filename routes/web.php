@@ -46,15 +46,21 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     // Route::resource('hafalan', HafalanController::class);
 
     // Users - Santri
-    Route::middleware(['can:manage_users', 'check.quota:santri'])->group(function () {
-        Route::resource('users/santri', SantriController::class);
-        Route::post('users/santri/{santri}/activate', [SantriController::class, 'activate'])
-            ->name('users.santri.activate');
+    Route::middleware(['can:manage_users', 'check.quota:santri'])->prefix('users')->name('users.')->group(function () {
+        Route::resource('santri', SantriController::class);
+        Route::get('santri/export', [SantriController::class, 'export'])->name('santri.export');
+        Route::get('santri/stats', [SantriController::class, 'stats'])->name('santri.stats');
+        Route::post('santri/{santri}/activate', [SantriController::class, 'activate'])
+            ->name('santri.activate');
     });
 
     // Classes
+    // Allow authenticated users to view a class detail (ustadz can view their classes)
+    Route::get('classes/{class}', [ClassController::class, 'show'])->name('classes.show');
+
     Route::middleware(['can:manage_classes'])->group(function () {
-        Route::resource('classes', ClassController::class);
+        // Resource routes for classes except 'show' which is accessible to non-admins
+        Route::resource('classes', ClassController::class)->except(['show']);
         Route::get('classes/{class}/members', [ClassController::class, 'members'])
             ->name('classes.members');
         Route::post('classes/{class}/assign-ustadz', [ClassController::class, 'assignUstadz'])

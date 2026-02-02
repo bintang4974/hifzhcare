@@ -159,6 +159,15 @@ class ClassController extends Controller
             'pending_hafalan' => $class->hafalans->where('status', 'pending')->count(),
         ];
 
+        // If current user is an ustadz, only allow access if they teach this class
+        $user = auth()->user();
+        if ($user && method_exists($user, 'isUstadz') && $user->isUstadz()) {
+            $ustadzId = $user->ustadzProfile?->id;
+            if (! $class->activeUstadz->contains('id', $ustadzId)) {
+                abort(403, 'This action is unauthorized.');
+            }
+        }
+
         return view('classes.show', compact('class', 'stats'));
     }
 
@@ -223,7 +232,10 @@ class ClassController extends Controller
         // Get available santri (not enrolled in this class)
         $availableSantri = SantriProfile::whereDoesntHave('activeClasses', function ($q) use ($class) {
             $q->where('class_id', $class->id);
-        })->with('user')->where('status', 'active')->get();
+        })->with('user')
+            ->whereHas('user', function ($q) {
+                $q->where('status', 'active');
+            })->get();
 
         return view('classes.members', compact('class', 'availableUstadz', 'availableSantri'));
     }

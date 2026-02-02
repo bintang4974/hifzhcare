@@ -182,8 +182,8 @@
                             <i class="fas fa-chevron-down text-xs transform" :class="open ? 'rotate-180' : ''"></i>
                         </button>
                         <div x-show="open" x-cloak class="ml-4 mt-2 space-y-1">
-                            {{-- <a href="{{ route('users.santri.index') }}" --}}
-                            <a href=""
+                            <a href="{{ route('users.santri.index') }}"
+                            {{-- <a href="" --}}
                                 class="block px-4 py-2 text-sm rounded-lg {{ request()->routeIs('users.santri.*') ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50' }}">
                                 <i class="fas fa-user-graduate mr-2"></i>Santri
                             </a>
