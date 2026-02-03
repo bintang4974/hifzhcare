@@ -5,7 +5,9 @@ use App\Http\Controllers\{
     ClassController,
     HafalanController,
     ProfileController,
-    SantriController
+    SantriController,
+    UstadzController,
+    WaliController
 };
 use Illuminate\Support\Facades\Route;
 
@@ -28,7 +30,6 @@ Route::get('/', function () {
 });
 
 Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
-
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
@@ -74,6 +75,40 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
         Route::post('classes/{class}/graduate-santri/{santri}', [ClassController::class, 'graduateSantri'])
             ->name('classes.graduate-santri');
     });
+
+    // Ustadz Routes
+    Route::prefix('users/ustadz')->name('users.ustadz.')->group(function () {
+        Route::get('/', [UstadzController::class, 'index'])->name('index');
+        Route::get('/stats', [UstadzController::class, 'stats'])->name('stats');
+        Route::get('/create', [UstadzController::class, 'create'])->name('create');
+        Route::post('/', [UstadzController::class, 'store'])->name('store');
+        Route::get('/{ustadz}', [UstadzController::class, 'show'])->name('show');
+        Route::get('/{ustadz}/edit', [UstadzController::class, 'edit'])->name('edit');
+        Route::put('/{ustadz}', [UstadzController::class, 'update'])->name('update');
+        Route::delete('/{ustadz}', [UstadzController::class, 'destroy'])->name('destroy');
+        Route::post('/{ustadz}/activate', [UstadzController::class, 'activate'])->name('activate');
+    });
+
+    // Wali Routes
+    Route::prefix('users/wali')->name('users.wali.')->group(function () {
+        Route::get('/', [WaliController::class, 'index'])->name('index');
+        Route::get('/stats', [WaliController::class, 'stats'])->name('stats');
+        Route::get('/create', [WaliController::class, 'create'])->name('create');
+        Route::post('/', [WaliController::class, 'store'])->name('store');
+        Route::get('/{wali}', [WaliController::class, 'show'])->name('show');
+        Route::get('/{wali}/edit', [WaliController::class, 'edit'])->name('edit');
+        Route::put('/{wali}', [WaliController::class, 'update'])->name('update');
+        Route::delete('/{wali}', [WaliController::class, 'destroy'])->name('destroy');
+    });
+
+    // Ustadz routes
+    // Route::resource('users/ustadz', UstadzController::class)->names('users.ustadz');
+    // Route::post('users/ustadz/{id}/activate', [UstadzController::class, 'activate'])->name('users.ustadz.activate');
+    // Route::get('users/ustadz/stats', [UstadzController::class, 'stats'])->name('users.ustadz.stats');
+
+    // // Wali routes
+    // Route::resource('users/wali', WaliController::class)->names('users.wali');
+    // Route::get('users/wali/stats', [WaliController::class, 'stats'])->name('users.wali.stats');
 });
 
 // Route::middleware(['auth', 'verified'])->group(function () {

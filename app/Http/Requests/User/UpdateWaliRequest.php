@@ -4,14 +4,14 @@ namespace App\Http\Requests\Wali;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class CreateWaliRequest extends FormRequest
+class UpdateWaliRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
     {
-        return $this->user()->can('create_users');
+        return $this->user()->can('edit_users');
     }
 
     /**
@@ -19,25 +19,30 @@ class CreateWaliRequest extends FormRequest
      */
     public function rules(): array
     {
+        $waliId = $this->route('wali');
         $pesantrenId = session('current_pesantren_id');
 
         return [
             // User data
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
+            'email' => [
+                'nullable',
+                'email',
+                'max:255',
+                'unique:users,email,' . $this->getWaliUserId($waliId)
+            ],
             'phone' => [
                 'required',
                 'string',
                 'max:20',
-                'unique:users,phone,NULL,id,pesantren_id,' . $pesantrenId
+                'unique:users,phone,' . $this->getWaliUserId($waliId) . ',id,pesantren_id,' . $pesantrenId
             ],
-            'password' => ['nullable', 'string', 'min:8'],
 
             // Wali profile data
             'nik' => [
                 'nullable',
                 'digits:16',
-                'unique:wali_profiles,nik,NULL,id,pesantren_id,' . $pesantrenId
+                'unique:wali_profiles,nik,' . $waliId . ',id,pesantren_id,' . $pesantrenId
             ],
             'relation' => ['required', 'in:ayah,ibu,wali'],
             'occupation' => ['nullable', 'string', 'max:100'],
@@ -54,7 +59,6 @@ class CreateWaliRequest extends FormRequest
             'name' => 'nama lengkap',
             'email' => 'email',
             'phone' => 'nomor HP',
-            'password' => 'password',
             'nik' => 'NIK',
             'relation' => 'hubungan',
             'occupation' => 'pekerjaan',
@@ -70,23 +74,30 @@ class CreateWaliRequest extends FormRequest
         return [
             'name.required' => 'Nama lengkap wajib diisi.',
             'name.max' => 'Nama lengkap maksimal 255 karakter.',
-
+            
             'email.email' => 'Format email tidak valid.',
             'email.unique' => 'Email sudah terdaftar.',
-
+            
             'phone.required' => 'Nomor HP wajib diisi.',
             'phone.unique' => 'Nomor HP sudah terdaftar di pesantren ini.',
-
-            'password.min' => 'Password minimal 8 karakter.',
-
+            
             'nik.digits' => 'NIK harus 16 digit.',
             'nik.unique' => 'NIK sudah terdaftar di pesantren ini.',
-
+            
             'relation.required' => 'Hubungan dengan santri wajib diisi.',
             'relation.in' => 'Hubungan harus salah satu dari: Ayah, Ibu, atau Wali.',
-
+            
             'occupation.max' => 'Pekerjaan maksimal 100 karakter.',
         ];
+    }
+
+    /**
+     * Get user ID from wali profile
+     */
+    protected function getWaliUserId($waliId)
+    {
+        $wali = \App\Models\WaliProfile::find($waliId);
+        return $wali ? $wali->user_id : null;
     }
 
     /**
@@ -94,11 +105,6 @@ class CreateWaliRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
-        // Auto-fill pesantren_id from session
-        $this->merge([
-            'pesantren_id' => session('current_pesantren_id'),
-        ]);
-
         // Clean NIK (remove non-numeric characters)
         if ($this->filled('nik')) {
             $this->merge([
