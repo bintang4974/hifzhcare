@@ -5,7 +5,10 @@ use App\Http\Controllers\{
     ClassController,
     HafalanController,
     ProfileController,
-    SantriController
+    SantriController,
+    SuperAdminDashboardController,
+    UstadzController,
+    WaliController
 };
 use Illuminate\Support\Facades\Route;
 
@@ -28,7 +31,6 @@ Route::get('/', function () {
 });
 
 Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
-
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
@@ -46,15 +48,21 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     // Route::resource('hafalan', HafalanController::class);
 
     // Users - Santri
-    Route::middleware(['can:manage_users', 'check.quota:santri'])->group(function () {
-        Route::resource('users/santri', SantriController::class);
-        Route::post('users/santri/{santri}/activate', [SantriController::class, 'activate'])
-            ->name('users.santri.activate');
+    Route::middleware(['can:manage_users', 'check.quota:santri'])->prefix('users')->name('users.')->group(function () {
+        Route::resource('santri', SantriController::class);
+        Route::get('santri/export', [SantriController::class, 'export'])->name('santri.export');
+        Route::get('santri/stats', [SantriController::class, 'stats'])->name('santri.stats');
+        Route::post('santri/{santri}/activate', [SantriController::class, 'activate'])
+            ->name('santri.activate');
     });
 
     // Classes
+    // Allow authenticated users to view a class detail (ustadz can view their classes)
+    Route::get('classes/{class}', [ClassController::class, 'show'])->name('classes.show');
+
     Route::middleware(['can:manage_classes'])->group(function () {
-        Route::resource('classes', ClassController::class);
+        // Resource routes for classes except 'show' which is accessible to non-admins
+        Route::resource('classes', ClassController::class)->except(['show']);
         Route::get('classes/{class}/members', [ClassController::class, 'members'])
             ->name('classes.members');
         Route::post('classes/{class}/assign-ustadz', [ClassController::class, 'assignUstadz'])
@@ -68,7 +76,54 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
         Route::post('classes/{class}/graduate-santri/{santri}', [ClassController::class, 'graduateSantri'])
             ->name('classes.graduate-santri');
     });
+
+    // Ustadz Routes
+    Route::prefix('users/ustadz')->name('users.ustadz.')->group(function () {
+        Route::get('/', [UstadzController::class, 'index'])->name('index');
+        Route::get('/stats', [UstadzController::class, 'stats'])->name('stats');
+        Route::get('/create', [UstadzController::class, 'create'])->name('create');
+        Route::post('/', [UstadzController::class, 'store'])->name('store');
+        Route::get('/{ustadz}', [UstadzController::class, 'show'])->name('show');
+        Route::get('/{ustadz}/edit', [UstadzController::class, 'edit'])->name('edit');
+        Route::put('/{ustadz}', [UstadzController::class, 'update'])->name('update');
+        Route::delete('/{ustadz}', [UstadzController::class, 'destroy'])->name('destroy');
+        Route::post('/{ustadz}/activate', [UstadzController::class, 'activate'])->name('activate');
+    });
+
+    // Wali Routes
+    Route::prefix('users/wali')->name('users.wali.')->group(function () {
+        Route::get('/', [WaliController::class, 'index'])->name('index');
+        Route::get('/stats', [WaliController::class, 'stats'])->name('stats');
+        Route::get('/create', [WaliController::class, 'create'])->name('create');
+        Route::post('/', [WaliController::class, 'store'])->name('store');
+        Route::get('/{wali}', [WaliController::class, 'show'])->name('show');
+        Route::get('/{wali}/edit', [WaliController::class, 'edit'])->name('edit');
+        Route::put('/{wali}', [WaliController::class, 'update'])->name('update');
+        Route::delete('/{wali}', [WaliController::class, 'destroy'])->name('destroy');
+    });
+
+    // Ustadz routes
+    // Route::resource('users/ustadz', UstadzController::class)->names('users.ustadz');
+    // Route::post('users/ustadz/{id}/activate', [UstadzController::class, 'activate'])->name('users.ustadz.activate');
+    // Route::get('users/ustadz/stats', [UstadzController::class, 'stats'])->name('users.ustadz.stats');
+
+    // // Wali routes
+    // Route::resource('users/wali', WaliController::class)->names('users.wali');
+    // Route::get('users/wali/stats', [WaliController::class, 'stats'])->name('users.wali.stats');
 });
+
+// Super Admin Routes
+// Avoid using the unavailable 'role' middleware alias; require authentication here
+// and let the controller enforce super-admin checks.
+Route::middleware(['auth'])->prefix('superadmin')->name('superadmin.')->group(function() {
+    Route::get('/dashboard', [SuperAdminDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/pesantrens', [SuperAdminDashboardController::class, 'pesantrens'])->name('pesantrens');
+    Route::get('/pesantrens/create', [SuperAdminDashboardController::class, 'createPesantren'])->name('pesantrens.create');
+    Route::post('/pesantrens', [SuperAdminDashboardController::class, 'storePesantren'])->name('pesantrens.store');
+    Route::post('/pesantrens/{id}/toggle', [SuperAdminDashboardController::class, 'togglePesantrenStatus'])->name('pesantrens.toggle');
+    Route::get('/statistics', [SuperAdminDashboardController::class, 'statistics'])->name('statistics');
+});
+
 
 // Route::middleware(['auth', 'verified'])->group(function () {
 

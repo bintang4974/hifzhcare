@@ -297,4 +297,72 @@ class SantriController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Return simple statistics for santri (used by AJAX in index view).
+     */
+    public function stats(Request $request)
+    {
+        $pesantrenId = auth()->user()->pesantren_id;
+
+        $base = SantriProfile::whereHas('user', function ($q) use ($pesantrenId) {
+            $q->where('pesantren_id', $pesantrenId);
+        });
+
+        $total = $base->count();
+        $active = (clone $base)->whereHas('user', fn($q) => $q->where('status', 'active'))->count();
+        $pending = (clone $base)->whereHas('user', fn($q) => $q->where('status', 'pending'))->count();
+        $graduated = (clone $base)->whereHas('user', fn($q) => $q->where('status', 'graduated'))->count();
+
+        return response()->json([
+            'total' => $total,
+            'active' => $active,
+            'pending' => $pending,
+            'graduated' => $graduated,
+        ]);
+    }
+
+    /**
+     * Export santri list as CSV for the current pesantren.
+     */
+    public function export(Request $request)
+    {
+        $pesantrenId = auth()->user()->pesantren_id;
+
+        $query = SantriProfile::with(['user', 'activeClasses'])
+            ->whereHas('user', function ($q) use ($pesantrenId) {
+                $q->where('pesantren_id', $pesantrenId);
+            })
+            ->orderBy('user.name');
+
+        $fileName = 'santri_export_' . now()->format('Y-m-d') . '.csv';
+
+        $callback = function () use ($query) {
+            $handle = fopen('php://output', 'w');
+            // Header
+            fputcsv($handle, ['Name', 'Email', 'NIS', 'Gender', 'Birth Date', 'Status', 'Classes']);
+
+            $query->chunk(200, function ($items) use ($handle) {
+                foreach ($items as $santri) {
+                    $classes = $santri->activeClasses->pluck('name')->join(', ');
+                    fputcsv($handle, [
+                        $santri->user->name,
+                        $santri->user->email,
+                        $santri->nis,
+                        $santri->gender,
+                        $santri->birth_date?->format('Y-m-d') ?? '',
+                        $santri->user->status,
+                        $classes,
+                    ]);
+                }
+            });
+
+            fclose($handle);
+        };
+
+        return response()->streamDownload($callback, $fileName, [
+            'Content-Type' => 'text/csv; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+        ]);
+    }
 }

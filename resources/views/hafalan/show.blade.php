@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.app-enhanced')
 
 @section('title', 'Detail Hafalan')
 
