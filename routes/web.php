@@ -6,6 +6,7 @@ use App\Http\Controllers\{
     HafalanController,
     ProfileController,
     SantriController,
+    SuperAdminDashboardController,
     UstadzController,
     WaliController
 };
@@ -110,6 +111,19 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     // Route::resource('users/wali', WaliController::class)->names('users.wali');
     // Route::get('users/wali/stats', [WaliController::class, 'stats'])->name('users.wali.stats');
 });
+
+// Super Admin Routes
+// Avoid using the unavailable 'role' middleware alias; require authentication here
+// and let the controller enforce super-admin checks.
+Route::middleware(['auth'])->prefix('superadmin')->name('superadmin.')->group(function() {
+    Route::get('/dashboard', [SuperAdminDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/pesantrens', [SuperAdminDashboardController::class, 'pesantrens'])->name('pesantrens');
+    Route::get('/pesantrens/create', [SuperAdminDashboardController::class, 'createPesantren'])->name('pesantrens.create');
+    Route::post('/pesantrens', [SuperAdminDashboardController::class, 'storePesantren'])->name('pesantrens.store');
+    Route::post('/pesantrens/{id}/toggle', [SuperAdminDashboardController::class, 'togglePesantrenStatus'])->name('pesantrens.toggle');
+    Route::get('/statistics', [SuperAdminDashboardController::class, 'statistics'])->name('statistics');
+});
+
 
 // Route::middleware(['auth', 'verified'])->group(function () {
 
