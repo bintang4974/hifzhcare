@@ -1,67 +1,13 @@
 <?php
 
-// namespace App\Http\Controllers;
-
-// use Illuminate\Http\Request;
-
-// class SuperAdminDashboardController extends Controller
-// {
-//     public function __construct()
-//     {
-//         $this->middleware('auth');
-//     }
-
-//     public function index()
-//     {
-//         // Delegate to the main DashboardController which routes by user role
-//         $dashboard = new DashboardController();
-//         return $dashboard->index();
-//     }
-
-//     public function pesantrens()
-//     {
-//         abort_unless(auth()->user()->user_type === 'super_admin', 403);
-//         // Simple list view placeholder — reuse existing Pesantren model if available
-//         $pesantrens = \App\Models\Pesantren::latest()->get();
-//         return view('superadmin.pesantrens', compact('pesantrens'));
-//     }
-
-//     public function createPesantren()
-//     {
-//         abort_unless(auth()->user()->user_type === 'super_admin', 403);
-//         return view('superadmin.create-pesantren');
-//     }
-
-//     public function storePesantren(Request $request)
-//     {
-//         abort_unless(auth()->user()->user_type === 'super_admin', 403);
-//         $data = $request->validate([
-//             'name' => 'required|string|max:255',
-//             'email' => 'nullable|email',
-//         ]);
-//         \App\Models\Pesantren::create($data + ['status' => 'active']);
-//         return redirect()->route('superadmin.pesantrens')->with('success', 'Pesantren dibuat');
-//     }
-
-//     public function togglePesantrenStatus($id)
-//     {
-//         abort_unless(auth()->user()->user_type === 'super_admin', 403);
-//         $p = \App\Models\Pesantren::findOrFail($id);
-//         $p->status = $p->status === 'active' ? 'inactive' : 'active';
-//         $p->save();
-//         return redirect()->back()->with('success', 'Status pesantren diperbarui');
-//     }
-
-//     public function statistics()
-//     {
-//         abort_unless(auth()->user()->user_type === 'super_admin', 403);
-//         return response()->json(['ok' => true]);
-//     }
-// }
-
 namespace App\Http\Controllers;
 
-use App\Models\{Pesantren, UstadzProfile, SantriProfile, HafalanRecord, Certificate, Hafalan, User};
+use App\Models\Certificate;
+use App\Models\Hafalan;
+use App\Models\Pesantren;
+use App\Models\SantriProfile;
+use App\Models\User;
+use App\Models\UstadzProfile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -70,7 +16,7 @@ class SuperAdminDashboardController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
-        $this->middleware('role:super_admin');
+        $this->middleware('role:Super Admin');
     }
 
     /**
@@ -117,7 +63,7 @@ class SuperAdminDashboardController extends Controller
         // System Health
         $systemHealth = $this->getSystemHealth();
 
-        return view('dashboards.superadmin', compact(
+        return view('dashboard.super-admin', compact(
             'stats',
             'monthlyGrowth',
             'pesantrenPerformance',
@@ -172,7 +118,7 @@ class SuperAdminDashboardController extends Controller
                 'hafalans' => function ($q) {
                     $q->where('status', 'verified');
                 },
-                'certificates'
+                'certificates',
             ])
             ->get()
             ->map(function ($pesantren) {
@@ -194,10 +140,12 @@ class SuperAdminDashboardController extends Controller
     {
         $totalSantri = SantriProfile::where('pesantren_id', $pesantrenId)->count();
 
-        if ($totalSantri == 0) return 0;
+        if ($totalSantri == 0) {
+            return 0;
+        }
 
         $completedSantri = SantriProfile::where('pesantren_id', $pesantrenId)
-            ->where('progress_percentage', '>=', 100)
+            ->where('total_juz_completed', '>=', 30)
             ->count();
 
         return round(($completedSantri / $totalSantri) * 100, 2);
@@ -220,22 +168,22 @@ class SuperAdminDashboardController extends Controller
                     'message' => "Pesantren '{$p->name}' terdaftar",
                     'time' => $p->created_at,
                     'icon' => 'building',
-                    'color' => 'blue'
+                    'color' => 'blue',
                 ];
             });
 
         // Recent certificates
-        $recentCertificates = Certificate::with(['santri.user', 'pesantren'])
+        $recentCertificates = Certificate::with(['user', 'pesantren'])
             ->latest()
             ->take(5)
             ->get()
             ->map(function ($c) {
                 return [
                     'type' => 'certificate_issued',
-                    'message' => "Sertifikat diterbitkan untuk {$c->santri->user->name} ({$c->pesantren->name})",
+                    'message' => "Sertifikat diterbitkan untuk {$c->user->name} ({$c->pesantren->name})",
                     'time' => $c->created_at,
                     'icon' => 'certificate',
-                    'color' => 'green'
+                    'color' => 'green',
                 ];
             });
 
@@ -254,12 +202,12 @@ class SuperAdminDashboardController extends Controller
     protected function getSystemHealth()
     {
         // Database size
-        $dbSize = DB::select("
+        $dbSize = DB::select('
             SELECT 
                 ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) AS size_mb
             FROM information_schema.tables 
             WHERE table_schema = DATABASE()
-        ")[0]->size_mb ?? 0;
+        ')[0]->size_mb ?? 0;
 
         // Storage usage (if using local storage)
         $storageUsed = 0;
@@ -280,19 +228,25 @@ class SuperAdminDashboardController extends Controller
      */
     public function pesantrens()
     {
-        $pesantrens = Pesantren::withCount(['santris', 'ustadzs', 'admins'])
+        $pesantrens = Pesantren::withCount([
+            'santriProfiles',
+            'ustadzProfiles',
+            'users' => function ($q) {
+                $q->where('user_type', 'admin');
+            }
+        ])
             ->latest()
             ->paginate(20);
 
-        return view('dashboards.superadmin-pesantrens', compact('pesantrens'));
+        return view('pesantrens.index', compact('pesantrens'));
     }
 
     /**
-     * Create new pesantren
+     * Create new pesantren form
      */
     public function createPesantren()
     {
-        return view('dashboards.superadmin-pesantren-create');
+        return view('pesantrens.create');
     }
 
     /**
@@ -306,8 +260,11 @@ class SuperAdminDashboardController extends Controller
             'address' => 'required|string',
             'phone' => 'required|string|max:20',
             'email' => 'nullable|email|max:255',
+            'website' => 'nullable|url|max:255',
+            'whatsapp' => 'nullable|string|max:20',
             'description' => 'nullable|string',
             'max_santri' => 'nullable|integer|min:0',
+            'established_year' => 'nullable|integer|min:1900|max:' . date('Y'),
             'status' => 'required|in:pending,active,inactive',
         ]);
 
@@ -316,6 +273,139 @@ class SuperAdminDashboardController extends Controller
         return redirect()
             ->route('superadmin.pesantrens')
             ->with('success', 'Pesantren berhasil ditambahkan!');
+    }
+
+    /**
+     * Show pesantren detail
+     */
+    public function showPesantren($id)
+    {
+        $pesantren = Pesantren::withCount([
+            'santriProfiles',
+            'ustadzProfiles',
+            'users' => function ($q) {
+                $q->where('user_type', 'admin');
+            }
+        ])
+            ->findOrFail($id);
+
+        // Statistics
+        $stats = [
+            'total_santri' => $pesantren->santri_profiles_count,
+            'total_ustadz' => $pesantren->ustadz_profiles_count,
+            'total_classes' => $pesantren->classes()->count(),
+            'total_hafalan' => Hafalan::where('pesantren_id', $id)
+                ->where('status', 'verified')
+                ->count(),
+            'total_certificates' => Certificate::where('pesantren_id', $id)->count(),
+        ];
+
+        // Recent data
+        $recentSantri = SantriProfile::where('pesantren_id', $id)
+            ->with('user')
+            ->latest()
+            ->take(5)
+            ->get();
+
+        $recentUstadz = UstadzProfile::where('pesantren_id', $id)
+            ->with('user')
+            ->withCount('assignedClasses')
+            ->latest()
+            ->take(5)
+            ->get();
+
+        $recentCertificates = Certificate::where('pesantren_id', $id)
+            ->with(['santri.user'])
+            ->latest()
+            ->take(6)
+            ->get();
+
+        return view('pesantrens.show', compact(
+            'pesantren',
+            'stats',
+            'recentSantri',
+            'recentUstadz',
+            'recentCertificates'
+        ));
+    }
+
+    /**
+     * Edit pesantren form
+     */
+    public function editPesantren($id)
+    {
+        $pesantren = Pesantren::withCount([
+            'santriProfiles',
+            'ustadzProfiles',
+            'users' => function ($q) {
+                $q->where('user_type', 'admin');
+            }
+        ])
+            ->findOrFail($id);
+
+        return view('pesantrens.edit', compact('pesantren'));
+    }
+
+    /**
+     * Update pesantren
+     */
+    public function updatePesantren(Request $request, $id)
+    {
+        $pesantren = Pesantren::findOrFail($id);
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'code' => 'required|string|max:50|unique:pesantrens,code,' . $id,
+            'address' => 'required|string',
+            'phone' => 'required|string|max:20',
+            'email' => 'nullable|email|max:255',
+            'website' => 'nullable|url|max:255',
+            'whatsapp' => 'nullable|string|max:20',
+            'description' => 'nullable|string',
+            'max_santri' => 'nullable|integer|min:0',
+            'established_year' => 'nullable|integer|min:1900|max:' . date('Y'),
+            'status' => 'required|in:pending,active,inactive',
+        ]);
+
+        $pesantren->update($validated);
+
+        return redirect()
+            ->route('pesantrens.show', $id)
+            ->with('success', 'Pesantren berhasil diupdate!');
+    }
+
+    /**
+     * Delete pesantren (soft delete)
+     */
+    public function destroyPesantren($id)
+    {
+        try {
+            $pesantren = Pesantren::findOrFail($id);
+
+            // Check if pesantren has data
+            $santriCount = $pesantren->santriProfiles()->count();
+            $ustadzCount = $pesantren->ustadzProfiles()->count();
+
+            if ($santriCount > 0 || $ustadzCount > 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Tidak dapat menghapus pesantren yang masih memiliki {$santriCount} santri dan {$ustadzCount} ustadz. Hapus atau pindahkan data terlebih dahulu."
+                ], 400);
+            }
+
+            // Soft delete
+            $pesantren->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pesantren berhasil dihapus!'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -333,6 +423,58 @@ class SuperAdminDashboardController extends Controller
             'message' => "Status pesantren berhasil diubah menjadi {$newStatus}",
             'status' => $newStatus
         ]);
+    }
+
+    /**
+     * Show pesantren settings
+     */
+    public function showSettings($id)
+    {
+        $pesantren = Pesantren::findOrFail($id);
+
+        // Ensure settings is decoded
+        if (is_string($pesantren->settings)) {
+            $pesantren->settings = json_decode($pesantren->settings, true) ?? [];
+        }
+
+        return view('pesantrens.settings', compact('pesantren'));
+    }
+
+    /**
+     * Update pesantren settings
+     */
+    public function updateSettings(Request $request, $id)
+    {
+        $pesantren = Pesantren::findOrFail($id);
+
+        $settings = [
+            // Basic settings
+            'allow_registration' => $request->has('allow_registration'),
+            'auto_approve_santri' => $request->has('auto_approve_santri'),
+            'public_profile_enabled' => $request->has('public_profile_enabled'),
+
+            // Hafalan settings
+            'min_ayat_per_setoran' => (int) $request->input('min_ayat_per_setoran', 1),
+            'max_ayat_per_setoran' => (int) $request->input('max_ayat_per_setoran', 50),
+            'require_audio_recording' => $request->has('require_audio_recording'),
+            'auto_verify_hafalan' => $request->has('auto_verify_hafalan'),
+
+            // Certificate settings
+            'min_progress_for_certificate' => (int) $request->input('min_progress_for_certificate', 100),
+            'certificate_prefix' => $request->input('certificate_prefix', $pesantren->code),
+            'auto_issue_certificate' => $request->has('auto_issue_certificate'),
+
+            // Notification settings
+            'enable_email_notifications' => $request->has('enable_email_notifications'),
+            'enable_whatsapp_notifications' => $request->has('enable_whatsapp_notifications'),
+            'notify_wali_on_verification' => $request->has('notify_wali_on_verification'),
+        ];
+
+        $pesantren->update(['settings' => $settings]);
+
+        return redirect()
+            ->route('superadmin.pesantrens.settings', $id)
+            ->with('success', 'Pengaturan berhasil disimpan!');
     }
 
     /**

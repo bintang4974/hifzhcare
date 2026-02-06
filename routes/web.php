@@ -1,30 +1,16 @@
 <?php
 
-use App\Http\Controllers\{
-    DashboardController,
-    ClassController,
-    HafalanController,
-    ProfileController,
-    SantriController,
-    SuperAdminDashboardController,
-    UstadzController,
-    WaliController
-};
+use App\Http\Controllers\ClassController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\HafalanController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SantriController;
+use App\Http\Controllers\StakeholderDashboardController;
+use App\Http\Controllers\SuperAdminDashboardController;
+use App\Http\Controllers\UstadzController;
+use App\Http\Controllers\WaliController;
 use Illuminate\Support\Facades\Route;
 
-// Route::get('/', function () {
-//     return view('welcome');
-// });
-
-// Route::get('/dashboard', function () {
-//     return view('dashboard');
-// })->middleware(['auth', 'verified'])->name('dashboard');
-
-// Route::middleware('auth')->group(function () {
-//     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-//     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-//     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-// });
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -101,29 +87,38 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
         Route::put('/{wali}', [WaliController::class, 'update'])->name('update');
         Route::delete('/{wali}', [WaliController::class, 'destroy'])->name('destroy');
     });
-
-    // Ustadz routes
-    // Route::resource('users/ustadz', UstadzController::class)->names('users.ustadz');
-    // Route::post('users/ustadz/{id}/activate', [UstadzController::class, 'activate'])->name('users.ustadz.activate');
-    // Route::get('users/ustadz/stats', [UstadzController::class, 'stats'])->name('users.ustadz.stats');
-
-    // // Wali routes
-    // Route::resource('users/wali', WaliController::class)->names('users.wali');
-    // Route::get('users/wali/stats', [WaliController::class, 'stats'])->name('users.wali.stats');
 });
 
 // Super Admin Routes
-// Avoid using the unavailable 'role' middleware alias; require authentication here
-// and let the controller enforce super-admin checks.
-Route::middleware(['auth'])->prefix('superadmin')->name('superadmin.')->group(function() {
+Route::middleware(['auth', 'role:Super Admin'])->prefix('superadmin')->name('superadmin.')->group(function () {
     Route::get('/dashboard', [SuperAdminDashboardController::class, 'index'])->name('dashboard');
+    // Pesantren CRUD
     Route::get('/pesantrens', [SuperAdminDashboardController::class, 'pesantrens'])->name('pesantrens');
     Route::get('/pesantrens/create', [SuperAdminDashboardController::class, 'createPesantren'])->name('pesantrens.create');
     Route::post('/pesantrens', [SuperAdminDashboardController::class, 'storePesantren'])->name('pesantrens.store');
+    Route::get('/pesantrens/{id}', [SuperAdminDashboardController::class, 'showPesantren'])->name('pesantrens.show');
+    Route::get('/pesantrens/{id}/edit', [SuperAdminDashboardController::class, 'editPesantren'])->name('pesantrens.edit');
+    Route::put('/pesantrens/{id}', [SuperAdminDashboardController::class, 'updatePesantren'])->name('pesantrens.update');
+    Route::delete('/pesantrens/{id}', [SuperAdminDashboardController::class, 'destroyPesantren'])->name('pesantrens.destroy');
+    
+    // Pesantren Actions
     Route::post('/pesantrens/{id}/toggle', [SuperAdminDashboardController::class, 'togglePesantrenStatus'])->name('pesantrens.toggle');
+    
+    // Pesantren Settings
+    Route::get('/pesantrens/{id}/settings', [SuperAdminDashboardController::class, 'showSettings'])->name('pesantrens.settings');
+    Route::put('/pesantrens/{id}/settings', [SuperAdminDashboardController::class, 'updateSettings'])->name('pesantrens.updateSettings');
+    
+    // Statistics
     Route::get('/statistics', [SuperAdminDashboardController::class, 'statistics'])->name('statistics');
 });
 
+Route::middleware(['auth', 'tenant', 'role:stakeholder'])->prefix('stakeholder')->name('stakeholder.')->group(function () {
+    // Main dashboard
+    Route::get('/dashboard', [StakeholderDashboardController::class, 'index'])->name('dashboard');
+
+    // Export reports
+    Route::post('/export-report', [StakeholderDashboardController::class, 'exportReport'])->name('export');
+});
 
 // Route::middleware(['auth', 'verified'])->group(function () {
 
