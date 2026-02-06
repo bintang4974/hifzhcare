@@ -42,7 +42,7 @@ class HafalanController extends Controller
      */
     protected function datatable(Request $request)
     {
-        $query = Hafalan::with(['user:id,name', 'class:id,name', 'verifiedBy:id,name', 'audios'])
+        $query = Hafalan::with(['user:id,name', 'class:id,name', 'verifiedBy.user:id,name', 'audios'])
             ->select('hafalans.*');
 
         // If user is ustadz, limit to hafalans for classes they teach
@@ -115,9 +115,10 @@ class HafalanController extends Controller
             })
             ->addColumn('verified_info', function ($hafalan) {
                 if ($hafalan->verified_at) {
+                    $verifier = $hafalan->verifiedBy?->user?->name ?? '-';
                     return "<small class='text-gray-600'>" .
                         $hafalan->verified_at->format('d M Y') . "<br>" .
-                        "oleh " . ($hafalan->verifiedBy?->name ?? '-') .
+                        "oleh " . $verifier .
                         "</small>";
                 }
                 return '-';
@@ -230,7 +231,7 @@ class HafalanController extends Controller
      */
     public function show(Hafalan $hafalan)
     {
-        $hafalan->load(['user', 'class', 'createdBy', 'verifiedBy', 'audios']);
+        $hafalan->load(['user', 'class', 'createdBy', 'verifiedBy.user', 'audios']);
 
         return view('hafalan.show', compact('hafalan'));
     }
