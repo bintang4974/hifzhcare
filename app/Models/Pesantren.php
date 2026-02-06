@@ -11,7 +11,7 @@ use Illuminate\Support\Str;
 class Pesantren extends Model
 {
     use HasFactory, SoftDeletes;
-    
+
     protected $fillable = [
         'name',
         'slug',
@@ -28,21 +28,21 @@ class Pesantren extends Model
         'subscription_expired_at',
         'activated_at',
     ];
-    
+
     protected $casts = [
         'is_appreciation_fund_enabled' => 'boolean',
         'audio_storage_used' => 'integer',
         'subscription_expired_at' => 'datetime',
         'activated_at' => 'datetime',
     ];
-    
+
     /**
      * Boot model events.
      */
     protected static function boot()
     {
         parent::boot();
-        
+
         // Auto-generate slug from name
         static::creating(function ($pesantren) {
             if (empty($pesantren->slug)) {
@@ -50,11 +50,11 @@ class Pesantren extends Model
             }
         });
     }
-    
+
     // ============================================
     // RELATIONSHIPS
     // ============================================
-    
+
     /**
      * Get all users in this pesantren.
      */
@@ -62,7 +62,15 @@ class Pesantren extends Model
     {
         return $this->hasMany(User::class);
     }
-    
+
+    /**
+     * Get all santri profiles (alias: santris).
+     */
+    public function santris(): HasMany
+    {
+        return $this->hasMany(SantriProfile::class);
+    }
+
     /**
      * Get all santri profiles.
      */
@@ -70,7 +78,15 @@ class Pesantren extends Model
     {
         return $this->hasMany(SantriProfile::class);
     }
-    
+
+    /**
+     * Get all ustadz profiles (alias: ustadzs).
+     */
+    public function ustadzs(): HasMany
+    {
+        return $this->hasMany(UstadzProfile::class);
+    }
+
     /**
      * Get all ustadz profiles.
      */
@@ -78,7 +94,7 @@ class Pesantren extends Model
     {
         return $this->hasMany(UstadzProfile::class);
     }
-    
+
     /**
      * Get all wali profiles.
      */
@@ -86,7 +102,7 @@ class Pesantren extends Model
     {
         return $this->hasMany(WaliProfile::class);
     }
-    
+
     /**
      * Get all stakeholder profiles.
      */
@@ -94,7 +110,7 @@ class Pesantren extends Model
     {
         return $this->hasMany(StakeholderProfile::class);
     }
-    
+
     /**
      * Get all classes.
      */
@@ -102,7 +118,7 @@ class Pesantren extends Model
     {
         return $this->hasMany(Classes::class);
     }
-    
+
     /**
      * Get all hafalans.
      */
@@ -110,7 +126,7 @@ class Pesantren extends Model
     {
         return $this->hasMany(Hafalan::class);
     }
-    
+
     /**
      * Get all certificates.
      */
@@ -118,7 +134,7 @@ class Pesantren extends Model
     {
         return $this->hasMany(Certificate::class);
     }
-    
+
     /**
      * Get all certificate templates.
      */
@@ -126,7 +142,7 @@ class Pesantren extends Model
     {
         return $this->hasMany(CertificateTemplate::class);
     }
-    
+
     /**
      * Get all appreciation funds.
      */
@@ -134,7 +150,7 @@ class Pesantren extends Model
     {
         return $this->hasMany(AppreciationFund::class);
     }
-    
+
     /**
      * Get all subscriptions.
      */
@@ -142,7 +158,7 @@ class Pesantren extends Model
     {
         return $this->hasMany(Subscription::class);
     }
-    
+
     /**
      * Get all payments.
      */
@@ -150,22 +166,30 @@ class Pesantren extends Model
     {
         return $this->hasMany(Payment::class);
     }
-    
+
+    /**
+     * Get all admin users for this pesantren.
+     */
+    public function admins(): HasMany
+    {
+        return $this->hasMany(User::class)->where('user_type', 'admin');
+    }
+
     // ============================================
     // ACCESSORS & MUTATORS
     // ============================================
-    
+
     /**
      * Get subscription status.
      */
     public function getIsSubscriptionActiveAttribute(): bool
     {
-        return $this->status === 'active' 
+        return $this->status === 'active'
             && $this->subscription_tier !== 'free'
-            && $this->subscription_expired_at 
+            && $this->subscription_expired_at
             && $this->subscription_expired_at->isFuture();
     }
-    
+
     /**
      * Get available santri slots.
      */
@@ -173,7 +197,7 @@ class Pesantren extends Model
     {
         return max(0, $this->max_santri - $this->current_santri_count);
     }
-    
+
     /**
      * Check if santri quota is full.
      */
@@ -181,29 +205,29 @@ class Pesantren extends Model
     {
         return $this->current_santri_count >= $this->max_santri;
     }
-    
+
     /**
      * Get audio storage in human readable format.
      */
     public function getAudioStorageUsedHumanAttribute(): string
     {
         $bytes = $this->audio_storage_used;
-        
+
         if ($bytes >= 1073741824) {
-            return number_format($bytes / 1073741824, 2) . ' GB';
+            return number_format($bytes / 1073741824, 2).' GB';
         } elseif ($bytes >= 1048576) {
-            return number_format($bytes / 1048576, 2) . ' MB';
+            return number_format($bytes / 1048576, 2).' MB';
         } elseif ($bytes >= 1024) {
-            return number_format($bytes / 1024, 2) . ' KB';
+            return number_format($bytes / 1024, 2).' KB';
         }
-        
-        return $bytes . ' bytes';
+
+        return $bytes.' bytes';
     }
-    
+
     // ============================================
     // SCOPES
     // ============================================
-    
+
     /**
      * Scope active pesantrens.
      */
@@ -211,7 +235,7 @@ class Pesantren extends Model
     {
         return $query->where('status', 'active');
     }
-    
+
     /**
      * Scope by subscription tier.
      */
@@ -219,14 +243,14 @@ class Pesantren extends Model
     {
         return $query->where('subscription_tier', $tier);
     }
-    
+
     /**
      * Scope with active subscription.
      */
     public function scopeWithActiveSubscription($query)
     {
         return $query->where('status', 'active')
-                    ->where('subscription_tier', '!=', 'free')
-                    ->where('subscription_expired_at', '>', now());
+            ->where('subscription_tier', '!=', 'free')
+            ->where('subscription_expired_at', '>', now());
     }
 }

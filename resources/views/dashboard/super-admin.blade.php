@@ -109,7 +109,9 @@
                         </span>
                     </div>
                 </div>
-                <canvas id="growth-chart" height="250"></canvas>
+                <div class="relative" style="height: 300px;">
+                    <canvas id="growth-chart"></canvas>
+                </div>
             </div>
 
             <!-- User Distribution -->
@@ -120,7 +122,9 @@
                         <i class="fas fa-sync-alt"></i>
                     </button>
                 </div>
-                <canvas id="distribution-chart" height="250"></canvas>
+                <div class="relative" style="height: 300px;">
+                    <canvas id="distribution-chart"></canvas>
+                </div>
             </div>
         </div>
 
@@ -234,76 +238,83 @@
 @push('scripts')
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        // Growth Chart
-        const growthCtx = document.getElementById('growth-chart').getContext('2d');
-        const growthChart = new Chart(growthCtx, {
-            type: 'line',
-            data: {
-                labels: {!! json_encode($monthlyGrowth['labels']) !!},
-                datasets: [{
-                    label: 'Santri',
-                    data: {!! json_encode($monthlyGrowth['santri']) !!},
-                    borderColor: 'rgb(59, 130, 246)',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }, {
-                    label: 'Hafalan',
-                    data: {!! json_encode($monthlyGrowth['hafalan']) !!},
-                    borderColor: 'rgb(16, 185, 129)',
-                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            precision: 0
+        // Wait for DOM to be fully loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Growth Chart
+            const growthCtx = document.getElementById('growth-chart');
+            if (growthCtx) {
+                const growthChart = new Chart(growthCtx, {
+                    type: 'line',
+                    data: {
+                        labels: {!! json_encode($monthlyGrowth['labels']) !!},
+                        datasets: [{
+                            label: 'Santri',
+                            data: {!! json_encode($monthlyGrowth['santri']) !!},
+                            borderColor: 'rgb(59, 130, 246)',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }, {
+                            label: 'Hafalan',
+                            data: {!! json_encode($monthlyGrowth['hafalan']) !!},
+                            borderColor: 'rgb(16, 185, 129)',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    precision: 0
+                                }
+                            }
                         }
                     }
-                }
+                });
             }
-        });
 
-        // Distribution Chart
-        const distributionCtx = document.getElementById('distribution-chart').getContext('2d');
-        const distributionChart = new Chart(distributionCtx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Admin', 'Ustadz', 'Santri', 'Wali'],
-                datasets: [{
-                    data: [
-                        {{ $userDistribution['admins'] }},
-                        {{ $userDistribution['ustadz'] }},
-                        {{ $userDistribution['santri'] }},
-                        {{ $userDistribution['wali'] }}
-                    ],
-                    backgroundColor: [
-                        'rgb(99, 102, 241)',
-                        'rgb(16, 185, 129)',
-                        'rgb(59, 130, 246)',
-                        'rgb(139, 92, 246)'
-                    ]
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
+            // Distribution Chart
+            const distributionCtx = document.getElementById('distribution-chart');
+            if (distributionCtx) {
+                const distributionChart = new Chart(distributionCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Admin', 'Ustadz', 'Santri', 'Wali'],
+                        datasets: [{
+                            data: [
+                                {{ $userDistribution['admins'] }},
+                                {{ $userDistribution['ustadz'] }},
+                                {{ $userDistribution['santri'] }},
+                                {{ $userDistribution['wali'] }}
+                            ],
+                            backgroundColor: [
+                                'rgb(99, 102, 241)',
+                                'rgb(16, 185, 129)',
+                                'rgb(59, 130, 246)',
+                                'rgb(139, 92, 246)'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
                     }
-                }
+                });
             }
         });
 
