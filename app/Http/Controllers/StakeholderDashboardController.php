@@ -2,7 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{AppreciationFund, SantriProfile, UstadzProfile, Certificate, Classes, Hafalan};
+use App\Models\AppreciationFund;
+use App\Models\Certificate;
+use App\Models\Classes;
+use App\Models\Hafalan;
+use App\Models\SantriProfile;
+use App\Models\UstadzProfile;
 use Illuminate\Http\Request;
 
 class StakeholderDashboardController extends Controller
@@ -11,7 +16,7 @@ class StakeholderDashboardController extends Controller
     {
         $this->middleware('auth');
         $this->middleware('tenant');
-        $this->middleware('role:stakeholder');
+        $this->middleware('role:Stakeholder');
     }
 
     /**
@@ -30,9 +35,9 @@ class StakeholderDashboardController extends Controller
                 })->count(),
             'total_ustadz' => UstadzProfile::where('pesantren_id', $pesantrenId)->count(),
             'total_classes' => Classes::where('pesantren_id', $pesantrenId)->count(),
-            'total_hafalan_verified' => Hafalan::whereHas('user', function ($q) use ($pesantrenId) {
-                $q->where('pesantren_id', $pesantrenId);
-            })->where('status', 'verified')->count(),
+            'total_hafalan_verified' => Hafalan::where('pesantren_id', $pesantrenId)
+                ->where('status', 'verified')
+                ->count(),
             'certificates_issued' => Certificate::where('pesantren_id', $pesantrenId)->count(),
             'total_donations' => AppreciationFund::whereHas('wali', function ($q) use ($pesantrenId) {
                 $q->where('pesantren_id', $pesantrenId);
@@ -68,7 +73,7 @@ class StakeholderDashboardController extends Controller
         // Students Needing Attention (low progress, inactive)
         $studentsNeedingAttention = $this->getStudentsNeedingAttention($pesantrenId);
 
-        return view('dashboards.stakeholder', compact(
+        return view('dashboard.stakeholder', compact(
             'kpis',
             'trends',
             'progressData',
@@ -88,10 +93,12 @@ class StakeholderDashboardController extends Controller
     {
         $totalSantri = SantriProfile::where('pesantren_id', $pesantrenId)->count();
 
-        if ($totalSantri == 0) return 0;
+        if ($totalSantri == 0) {
+            return 0;
+        }
 
         $completedSantri = SantriProfile::where('pesantren_id', $pesantrenId)
-            ->where('progress_percentage', '>=', 100)
+            ->where('total_juz_completed', '>=', 30)
             ->count();
 
         return round(($completedSantri / $totalSantri) * 100, 2);
@@ -117,17 +124,13 @@ class StakeholderDashboardController extends Controller
             ->count();
 
         // Hafalan trend
-        $currentHafalan = Hafalan::whereHas('user', function ($q) use ($pesantrenId) {
-                $q->where('pesantren_id', $pesantrenId);
-            })
+        $currentHafalan = Hafalan::where('pesantren_id', $pesantrenId)
             ->where('status', 'verified')
             ->whereYear('verified_at', $currentMonth->year)
             ->whereMonth('verified_at', $currentMonth->month)
             ->count();
 
-        $lastMonthHafalan = Hafalan::whereHas('user', function ($q) use ($pesantrenId) {
-                $q->where('pesantren_id', $pesantrenId);
-            })
+        $lastMonthHafalan = Hafalan::where('pesantren_id', $pesantrenId)
             ->where('status', 'verified')
             ->whereYear('verified_at', $lastMonth->year)
             ->whereMonth('verified_at', $lastMonth->month)
@@ -144,7 +147,10 @@ class StakeholderDashboardController extends Controller
      */
     protected function calculatePercentageChange($old, $new)
     {
-        if ($old == 0) return $new > 0 ? 100 : 0;
+        if ($old == 0) {
+            return $new > 0 ? 100 : 0;
+        }
+
         return round((($new - $old) / $old) * 100, 1);
     }
 
@@ -155,13 +161,13 @@ class StakeholderDashboardController extends Controller
     {
         $ranges = [
             '0-25%' => SantriProfile::where('pesantren_id', $pesantrenId)
-                ->whereBetween('progress_percentage', [0, 25])->count(),
+                ->whereBetween('total_juz_completed', [0, 7])->count(),
             '26-50%' => SantriProfile::where('pesantren_id', $pesantrenId)
-                ->whereBetween('progress_percentage', [26, 50])->count(),
+                ->whereBetween('total_juz_completed', [8, 15])->count(),
             '51-75%' => SantriProfile::where('pesantren_id', $pesantrenId)
-                ->whereBetween('progress_percentage', [51, 75])->count(),
+                ->whereBetween('total_juz_completed', [16, 22])->count(),
             '76-100%' => SantriProfile::where('pesantren_id', $pesantrenId)
-                ->where('progress_percentage', '>=', 76)->count(),
+                ->where('total_juz_completed', '>=', 23)->count(),
         ];
 
         return [
@@ -180,7 +186,7 @@ class StakeholderDashboardController extends Controller
             ->withCount(['hafalans as verified_hafalans' => function ($q) {
                 $q->where('status', 'verified');
             }])
-            ->orderBy('progress_percentage', 'desc')
+            ->orderBy('total_juz_completed', 'desc')
             ->orderBy('verified_hafalans', 'desc')
             ->take(10)
             ->get();
@@ -196,15 +202,16 @@ class StakeholderDashboardController extends Controller
             ->withCount('activeSantri')
             ->get()
             ->map(function ($class) {
-                $avgProgress = $class->activeSantri->avg('progress_percentage') ?? 0;
-                $totalVerified = Hafalan::whereHas('santri', function ($q) use ($class) {
-                    $q->whereIn('id', $class->activeSantri->pluck('id'));
-                })->where('status', 'verified')->count();
+                $avgJuzCompleted = $class->activeSantri->avg('total_juz_completed') ?? 0;
+                $avgProgress = round(($avgJuzCompleted / 30) * 100, 2);
+                $totalVerified = Hafalan::whereIn('user_id', $class->activeSantri->pluck('user_id'))
+                    ->where('status', 'verified')
+                    ->count();
 
                 return [
                     'name' => $class->name,
                     'total_santri' => $class->active_santri_count,
-                    'avg_progress' => round($avgProgress, 2),
+                    'avg_progress' => $avgProgress,
                     'total_verified' => $totalVerified,
                 ];
             });
@@ -222,9 +229,7 @@ class StakeholderDashboardController extends Controller
             $date = now()->subMonths($i);
             $months[] = $date->format('M Y');
 
-            $count = Hafalan::whereHas('santri', function ($q) use ($pesantrenId) {
-                $q->where('pesantren_id', $pesantrenId);
-            })
+            $count = Hafalan::where('pesantren_id', $pesantrenId)
                 ->where('status', 'verified')
                 ->whereYear('verified_at', $date->year)
                 ->whereMonth('verified_at', $date->month)
@@ -281,13 +286,13 @@ class StakeholderDashboardController extends Controller
         return SantriProfile::where('pesantren_id', $pesantrenId)
             ->with(['user'])
             ->where(function ($q) {
-                // Low progress OR no recent activity
-                $q->where('progress_percentage', '<', 20)
+                // Low progress (less than 20% = less than 6 juz) OR no recent activity
+                $q->where('total_juz_completed', '<', 6)
                     ->orWhereDoesntHave('hafalans', function ($q2) {
                         $q2->where('created_at', '>=', now()->subDays(30));
                     });
             })
-            ->orderBy('progress_percentage', 'asc')
+            ->orderBy('total_juz_completed', 'asc')
             ->take(10)
             ->get();
     }
@@ -309,7 +314,7 @@ class StakeholderDashboardController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Report exported successfully',
-            'data' => $data
+            'data' => $data,
         ]);
     }
 

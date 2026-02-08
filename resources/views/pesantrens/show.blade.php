@@ -278,7 +278,7 @@
                                     {{ $ustadz->created_at->diffForHumans() }}</p>
                             </div>
                             <div class="text-right">
-                                <p class="text-xs text-gray-600">{{ $ustadz->assigned_classes_count }} kelas</p>
+                                <p class="text-xs text-gray-600">{{ $ustadz->classes_count ?? 0 }} kelas</p>
                             </div>
                         </div>
                     @empty
@@ -302,7 +302,7 @@
                         <div class="flex items-center mb-2">
                             <i class="fas fa-award text-2xl text-yellow-600 mr-3"></i>
                             <div>
-                                <h4 class="font-bold text-gray-900">{{ $cert->santri->user->name }}</h4>
+                                <h4 class="font-bold text-gray-900">{{ $cert->user->name ?? 'N/A' }}</h4>
                                 <p class="text-xs text-gray-600">{{ $cert->created_at->format('d M Y') }}</p>
                             </div>
                         </div>

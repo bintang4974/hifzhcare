@@ -1,16 +1,15 @@
 <?php
 
+use App\Http\Controllers\AdminManagementController;
 use App\Http\Controllers\ClassController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HafalanController;
-use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SantriController;
 use App\Http\Controllers\StakeholderDashboardController;
 use App\Http\Controllers\SuperAdminDashboardController;
 use App\Http\Controllers\UstadzController;
 use App\Http\Controllers\WaliController;
 use Illuminate\Support\Facades\Route;
-
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -100,19 +99,35 @@ Route::middleware(['auth', 'role:Super Admin'])->prefix('superadmin')->name('sup
     Route::get('/pesantrens/{id}/edit', [SuperAdminDashboardController::class, 'editPesantren'])->name('pesantrens.edit');
     Route::put('/pesantrens/{id}', [SuperAdminDashboardController::class, 'updatePesantren'])->name('pesantrens.update');
     Route::delete('/pesantrens/{id}', [SuperAdminDashboardController::class, 'destroyPesantren'])->name('pesantrens.destroy');
-    
+
     // Pesantren Actions
     Route::post('/pesantrens/{id}/toggle', [SuperAdminDashboardController::class, 'togglePesantrenStatus'])->name('pesantrens.toggle');
-    
+
     // Pesantren Settings
     Route::get('/pesantrens/{id}/settings', [SuperAdminDashboardController::class, 'showSettings'])->name('pesantrens.settings');
     Route::put('/pesantrens/{id}/settings', [SuperAdminDashboardController::class, 'updateSettings'])->name('pesantrens.updateSettings');
-    
+
     // Statistics
     Route::get('/statistics', [SuperAdminDashboardController::class, 'statistics'])->name('statistics');
+
+    // Admin Management CRUD
+    Route::get('/admins', [AdminManagementController::class, 'index'])->name('admins.index');
+    Route::get('/admins/create', [AdminManagementController::class, 'create'])->name('admins.create');
+    Route::post('/admins', [AdminManagementController::class, 'store'])->name('admins.store');
+    Route::get('/admins/{id}/edit', [AdminManagementController::class, 'edit'])->name('admins.edit');
+    Route::put('/admins/{id}', [AdminManagementController::class, 'update'])->name('admins.update');
+    Route::delete('/admins/{id}', [AdminManagementController::class, 'destroy'])->name('admins.destroy');
+
+    // Admin Actions
+    Route::post('/admins/{id}/assign', [AdminManagementController::class, 'assign'])->name('admins.assign');
+    Route::post('/admins/{id}/unassign', [AdminManagementController::class, 'unassign'])->name('admins.unassign');
+    Route::post('/admins/{id}/activate', [AdminManagementController::class, 'activate'])->name('admins.activate');
+    Route::post('/admins/{id}/toggle', [AdminManagementController::class, 'toggleStatus'])->name('admins.toggle');
+    Route::post('/admins/{id}/reset-password', [AdminManagementController::class, 'resetPassword'])->name('admins.resetPassword');
+    Route::post('/admins/{id}/send-credentials', [AdminManagementController::class, 'sendCredentials'])->name('admins.sendCredentials');
 });
 
-Route::middleware(['auth', 'tenant', 'role:stakeholder'])->prefix('stakeholder')->name('stakeholder.')->group(function () {
+Route::middleware(['auth', 'tenant', 'role:Stakeholder'])->prefix('stakeholder')->name('stakeholder.')->group(function () {
     // Main dashboard
     Route::get('/dashboard', [StakeholderDashboardController::class, 'index'])->name('dashboard');
 

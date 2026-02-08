@@ -233,7 +233,7 @@ class SuperAdminDashboardController extends Controller
             'ustadzProfiles',
             'users' => function ($q) {
                 $q->where('user_type', 'admin');
-            }
+            },
         ])
             ->latest()
             ->paginate(20);
@@ -264,7 +264,7 @@ class SuperAdminDashboardController extends Controller
             'whatsapp' => 'nullable|string|max:20',
             'description' => 'nullable|string',
             'max_santri' => 'nullable|integer|min:0',
-            'established_year' => 'nullable|integer|min:1900|max:' . date('Y'),
+            'established_year' => 'nullable|integer|min:1900|max:'.date('Y'),
             'status' => 'required|in:pending,active,inactive',
         ]);
 
@@ -285,7 +285,7 @@ class SuperAdminDashboardController extends Controller
             'ustadzProfiles',
             'users' => function ($q) {
                 $q->where('user_type', 'admin');
-            }
+            },
         ])
             ->findOrFail($id);
 
@@ -309,13 +309,13 @@ class SuperAdminDashboardController extends Controller
 
         $recentUstadz = UstadzProfile::where('pesantren_id', $id)
             ->with('user')
-            ->withCount('assignedClasses')
+            ->withCount('classes')
             ->latest()
             ->take(5)
             ->get();
 
         $recentCertificates = Certificate::where('pesantren_id', $id)
-            ->with(['santri.user'])
+            ->with(['user', 'pesantren'])
             ->latest()
             ->take(6)
             ->get();
@@ -339,7 +339,7 @@ class SuperAdminDashboardController extends Controller
             'ustadzProfiles',
             'users' => function ($q) {
                 $q->where('user_type', 'admin');
-            }
+            },
         ])
             ->findOrFail($id);
 
@@ -355,7 +355,7 @@ class SuperAdminDashboardController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'code' => 'required|string|max:50|unique:pesantrens,code,' . $id,
+            'code' => 'required|string|max:50|unique:pesantrens,code,'.$id,
             'address' => 'required|string',
             'phone' => 'required|string|max:20',
             'email' => 'nullable|email|max:255',
@@ -363,7 +363,7 @@ class SuperAdminDashboardController extends Controller
             'whatsapp' => 'nullable|string|max:20',
             'description' => 'nullable|string',
             'max_santri' => 'nullable|integer|min:0',
-            'established_year' => 'nullable|integer|min:1900|max:' . date('Y'),
+            'established_year' => 'nullable|integer|min:1900|max:'.date('Y'),
             'status' => 'required|in:pending,active,inactive',
         ]);
 
@@ -389,7 +389,7 @@ class SuperAdminDashboardController extends Controller
             if ($santriCount > 0 || $ustadzCount > 0) {
                 return response()->json([
                     'success' => false,
-                    'message' => "Tidak dapat menghapus pesantren yang masih memiliki {$santriCount} santri dan {$ustadzCount} ustadz. Hapus atau pindahkan data terlebih dahulu."
+                    'message' => "Tidak dapat menghapus pesantren yang masih memiliki {$santriCount} santri dan {$ustadzCount} ustadz. Hapus atau pindahkan data terlebih dahulu.",
                 ], 400);
             }
 
@@ -398,12 +398,12 @@ class SuperAdminDashboardController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Pesantren berhasil dihapus!'
+                'message' => 'Pesantren berhasil dihapus!',
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error: ' . $e->getMessage()
+                'message' => 'Error: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -421,7 +421,7 @@ class SuperAdminDashboardController extends Controller
         return response()->json([
             'success' => true,
             'message' => "Status pesantren berhasil diubah menjadi {$newStatus}",
-            'status' => $newStatus
+            'status' => $newStatus,
         ]);
     }
 
@@ -504,7 +504,7 @@ class SuperAdminDashboardController extends Controller
                         User::where('user_type', 'ustadz')->count(),
                         User::where('user_type', 'santri')->count(),
                         User::where('user_type', 'wali')->count(),
-                    ]
+                    ],
                 ]);
 
             default:

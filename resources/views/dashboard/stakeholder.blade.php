@@ -170,7 +170,9 @@
                     <i class="fas fa-chart-bar text-blue-600 mr-2"></i>
                     Distribusi Progress Santri
                 </h3>
-                <canvas id="progress-chart" height="250"></canvas>
+                <div class="relative" style="height: 300px;">
+                    <canvas id="progress-chart"></canvas>
+                </div>
             </div>
 
             <!-- Hafalan Trend -->
@@ -179,7 +181,9 @@
                     <i class="fas fa-chart-line text-green-600 mr-2"></i>
                     Trend Hafalan (6 Bulan Terakhir)
                 </h3>
-                <canvas id="hafalan-chart" height="250"></canvas>
+                <div class="relative" style="height: 300px;">
+                    <canvas id="hafalan-chart"></canvas>
+                </div>
             </div>
         </div>
 
@@ -319,7 +323,7 @@
                         <div class="flex items-center mb-2">
                             <i class="fas fa-award text-2xl text-yellow-600 mr-3"></i>
                             <div>
-                                <h4 class="font-bold text-gray-900">{{ $cert->santri->user->name }}</h4>
+                                <h4 class="font-bold text-gray-900">{{ $cert->user->name ?? 'N/A' }}</h4>
                                 <p class="text-xs text-gray-600">{{ $cert->created_at->format('d M Y') }}</p>
                             </div>
                         </div>
@@ -339,80 +343,87 @@
 @push('scripts')
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        // Progress Distribution Chart
-        const progressCtx = document.getElementById('progress-chart').getContext('2d');
-        new Chart(progressCtx, {
-            type: 'bar',
-            data: {
-                labels: {!! json_encode($progressData['labels']) !!},
-                datasets: [{
-                    label: 'Jumlah Santri',
-                    data: {!! json_encode($progressData['data']) !!},
-                    backgroundColor: [
-                        'rgba(239, 68, 68, 0.8)',
-                        'rgba(251, 191, 36, 0.8)',
-                        'rgba(59, 130, 246, 0.8)',
-                        'rgba(16, 185, 129, 0.8)'
-                    ],
-                    borderColor: [
-                        'rgb(239, 68, 68)',
-                        'rgb(251, 191, 36)',
-                        'rgb(59, 130, 246)',
-                        'rgb(16, 185, 129)'
-                    ],
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            precision: 0
+        // Wait for DOM to be fully loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Progress Distribution Chart
+            const progressCtx = document.getElementById('progress-chart');
+            if (progressCtx) {
+                new Chart(progressCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: {!! json_encode($progressData['labels']) !!},
+                        datasets: [{
+                            label: 'Jumlah Santri',
+                            data: {!! json_encode($progressData['data']) !!},
+                            backgroundColor: [
+                                'rgba(239, 68, 68, 0.8)',
+                                'rgba(251, 191, 36, 0.8)',
+                                'rgba(59, 130, 246, 0.8)',
+                                'rgba(16, 185, 129, 0.8)'
+                            ],
+                            borderColor: [
+                                'rgb(239, 68, 68)',
+                                'rgb(251, 191, 36)',
+                                'rgb(59, 130, 246)',
+                                'rgb(16, 185, 129)'
+                            ],
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    precision: 0
+                                }
+                            }
                         }
                     }
-                }
+                });
             }
-        });
 
-        // Hafalan Trend Chart
-        const hafalanCtx = document.getElementById('hafalan-chart').getContext('2d');
-        new Chart(hafalanCtx, {
-            type: 'line',
-            data: {
-                labels: {!! json_encode($hafalanTrend['labels']) !!},
-                datasets: [{
-                    label: 'Hafalan Verified',
-                    data: {!! json_encode($hafalanTrend['data']) !!},
-                    borderColor: 'rgb(16, 185, 129)',
-                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            precision: 0
+            // Hafalan Trend Chart
+            const hafalanCtx = document.getElementById('hafalan-chart');
+            if (hafalanCtx) {
+                new Chart(hafalanCtx, {
+                    type: 'line',
+                    data: {
+                        labels: {!! json_encode($hafalanTrend['labels']) !!},
+                        datasets: [{
+                            label: 'Hafalan Verified',
+                            data: {!! json_encode($hafalanTrend['data']) !!},
+                            borderColor: 'rgb(16, 185, 129)',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    precision: 0
+                                }
+                            }
                         }
                     }
-                }
+                });
             }
         });
     </script>
