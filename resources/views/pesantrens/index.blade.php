@@ -190,6 +190,12 @@
 
                                     <!-- Action Buttons -->
                                     <div class="flex gap-2">
+                                        <a href="{{ route('superadmin.pesantrens.show', $pesantren->id) }}"
+                                            class="p-2 bg-purple-100 text-purple-600 hover:bg-purple-200 rounded-lg transition"
+                                            title="Detail">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+
                                         <button onclick="toggleStatus({{ $pesantren->id }})"
                                             class="p-2 {{ $pesantren->status === 'active' ? 'bg-yellow-100 text-yellow-600 hover:bg-yellow-200' : 'bg-green-100 text-green-600 hover:bg-green-200' }} rounded-lg transition"
                                             title="{{ $pesantren->status === 'active' ? 'Nonaktifkan' : 'Aktifkan' }}">
