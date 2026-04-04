@@ -39,7 +39,7 @@
 
                     <div class="flex-1 min-w-0">
                         <h2 class="text-3xl font-bold mb-2">{{ $ustadz->user->name }}</h2>
-                        <div class="flex items-center gap-4 mb-4 flex-wrap">
+                        <div class="flex items-center gap-4 mb-4 flex-wrap text-sm sm:text-base">
                             <span class="px-4 py-2 bg-white bg-opacity-20 backdrop-blur-sm rounded-lg">
                                 <i class="fas fa-id-card mr-2"></i>NIP: {{ $ustadz->nip }}
                             </span>
@@ -106,7 +106,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-gray-600 text-sm font-medium">Total Apresiasi</p>
-                        <p class="text-3xl font-bold text-gray-900 mt-2">Rp{{ number_format($stats['total_appreciation'], 0, ',', '.') }}</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-2">Rp{{ number_format($stats['total_appreciation'], 0, ',', '.') }}</p>
                     </div>
                     <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center text-orange-600 text-xl">
                         <i class="fas fa-gift"></i>
@@ -122,7 +122,7 @@
                 <h3 class="text-xl font-bold text-gray-900 mb-6 flex items-center">
                     <i class="fas fa-user-circle text-green-600 mr-3"></i>Informasi Pribadi
                 </h3>
-                <div class="grid grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div>
                         <label class="text-sm font-medium text-gray-600">Nama Lengkap</label>
                         <p class="text-lg font-semibold text-gray-900 mt-1">{{ $ustadz->user->name }}</p>
@@ -139,11 +139,11 @@
                         <label class="text-sm font-medium text-gray-600">Nomor HP</label>
                         <p class="text-lg font-semibold text-gray-900 mt-1">{{ $ustadz->user->phone ?? 'Belum diisi' }}</p>
                     </div>
-                    <div class="col-span-2">
+                    <div class="sm:col-span-2">
                         <label class="text-sm font-medium text-gray-600">Spesialisasi</label>
                         <p class="text-lg font-semibold text-gray-900 mt-1">{{ $ustadz->specialization ?? 'Belum diisi' }}</p>
                     </div>
-                    <div class="col-span-2">
+                    <div class="sm:col-span-2">
                         <label class="text-sm font-medium text-gray-600">Alamat</label>
                         <p class="text-lg font-semibold text-gray-900 mt-1">{{ $ustadz->address ?? 'Belum diisi' }}</p>
                     </div>
@@ -179,22 +179,22 @@
                     <i class="fas fa-list text-green-600 mr-3"></i>Daftar Kelas Aktif
                 </h3>
                 <div class="overflow-x-auto">
-                    <table class="w-full">
+                    <table class="w-full text-sm sm:text-base">
                         <thead>
                             <tr class="bg-gray-50 border-b border-gray-200">
-                                <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">No.</th>
-                                <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">Nama Kelas</th>
-                                <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">Juz</th>
-                                <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">Total Santri</th>
+                                <th class="px-3 sm:px-6 py-3 text-left text-sm font-semibold text-gray-700">No.</th>
+                                <th class="px-3 sm:px-6 py-3 text-left text-sm font-semibold text-gray-700">Nama Kelas</th>
+                                <th class="px-3 sm:px-6 py-3 text-left text-sm font-semibold text-gray-700">Juz</th>
+                                <th class="px-3 sm:px-6 py-3 text-left text-sm font-semibold text-gray-700">Total Santri</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach($ustadz->activeClasses as $class)
                                 <tr class="border-b border-gray-200 hover:bg-gray-50">
-                                    <td class="px-6 py-4 text-sm text-gray-900">{{ $loop->iteration }}</td>
-                                    <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $class->name }}</td>
-                                    <td class="px-6 py-4 text-sm text-gray-600">{{ $class->juz_range ?? '-' }}</td>
-                                    <td class="px-6 py-4 text-sm text-gray-600">{{ $class->activeSantri->count() }} santri</td>
+                                    <td class="px-3 sm:px-6 py-4 text-sm text-gray-900">{{ $loop->iteration }}</td>
+                                    <td class="px-3 sm:px-6 py-4 text-sm font-medium text-gray-900">{{ $class->name }}</td>
+                                    <td class="px-3 sm:px-6 py-4 text-sm text-gray-600">{{ $class->juz_range ?? '-' }}</td>
+                                    <td class="px-3 sm:px-6 py-4 text-sm text-gray-600">{{ $class->activeSantri->count() }} santri</td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -209,11 +209,14 @@
                 <h3 class="text-xl font-bold text-gray-900 mb-6 flex items-center">
                     <i class="fas fa-history text-purple-600 mr-3"></i>10 Hafalan Terakhir Diverifikasi
                 </h3>
-                <div class="overflow-x-auto">
-                    <table class="w-full">
+                
+                <!-- Desktop Table View -->
+                <div class="overflow-x-auto block">
+                    <table class="w-full text-sm">
                         <thead>
                             <tr class="bg-gray-50 border-b border-gray-200">
                                 <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">Santri</th>
+                                <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">Surat</th>
                                 <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">Juz</th>
                                 <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">Tanggal Verifikasi</th>
                                 <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
@@ -222,8 +225,9 @@
                         <tbody>
                             @foreach($ustadz->verifiedHafalans as $hafalan)
                                 <tr class="border-b border-gray-200 hover:bg-gray-50">
-                                    <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $hafalan->santriProfile->user->name ?? '-' }}</td>
-                                    <td class="px-6 py-4 text-sm text-gray-600">{{ $hafalan->juz ?? '-' }}</td>
+                                    <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $hafalan->user->name ?? '-' }}</td>
+                                    <td class="px-6 py-4 text-sm text-gray-600">{{ $hafalan->surah_name ?? '-' }}</td>
+                                    <td class="px-6 py-4 text-sm text-gray-600">{{ $hafalan->juz_number ?? '-' }}</td>
                                     <td class="px-6 py-4 text-sm text-gray-600">{{ $hafalan->verified_at?->format('d M Y') ?? '-' }}</td>
                                     <td class="px-6 py-4 text-sm">
                                         @if($hafalan->status === 'verified')

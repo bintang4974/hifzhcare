@@ -5,6 +5,7 @@ use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\ClassController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HafalanController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SantriController;
 use App\Http\Controllers\StakeholderDashboardController;
 use App\Http\Controllers\SuperAdminDashboardController;
@@ -53,7 +54,7 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     Route::prefix('certificates')->name('certificates.')->group(function () {
         // List & Stats
         Route::get('/', [CertificateController::class, 'index'])->name('index');
-        
+
         // Manual Generate (Admin only)
         Route::middleware(['can:manage_users'])->group(function () {
             Route::get('/generate', [CertificateController::class, 'generateForm'])->name('generate');
@@ -66,10 +67,10 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
         // IMPORTANT: Create route must be BEFORE {class} parameter route to avoid conflict
         Route::get('classes/create', [ClassController::class, 'create'])->name('classes.create');
         Route::get('classes/{class}/edit', [ClassController::class, 'edit'])->name('classes.edit');
-        
+
         // Resource routes for classes except 'show', 'create', 'edit'
         Route::resource('classes', ClassController::class)->except(['show', 'create', 'edit']);
-        
+
         Route::get('classes/{class}/members', [ClassController::class, 'members'])
             ->name('classes.members');
         Route::post('classes/{class}/assign-ustadz', [ClassController::class, 'assignUstadz'])
@@ -112,6 +113,29 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
         Route::get('/{wali}/edit', [WaliController::class, 'edit'])->name('edit');
         Route::put('/{wali}', [WaliController::class, 'update'])->name('update');
         Route::delete('/{wali}', [WaliController::class, 'destroy'])->name('destroy');
+    });
+
+    // ====================================
+    // REPORTS ROUTES
+    // ====================================
+    Route::middleware(['can:manage_users'])->prefix('reports')->name('reports.')->group(function () {
+        Route::get('/', [ReportController::class, 'index'])->name('index');
+
+        // Santri Reports
+        Route::post('/santri-data', [ReportController::class, 'santriData'])->name('santri-data');
+        Route::post('/santri-progress', [ReportController::class, 'santriProgress'])->name('santri-progress');
+        Route::post('/santri-ranking', [ReportController::class, 'santriRanking'])->name('santri-ranking');
+
+        // Class Reports
+        Route::post('/class-overview', [ReportController::class, 'classOverview'])->name('class-overview');
+        Route::post('/class-performance', [ReportController::class, 'classPerformance'])->name('class-performance');
+
+        // Hafalan Reports
+        Route::post('/hafalan-summary', [ReportController::class, 'hafalanSummary'])->name('hafalan-summary');
+        Route::post('/hafalan-juz', [ReportController::class, 'hafalanJuz'])->name('hafalan-juz');
+
+        // Certificate Reports
+        Route::post('/certificate-summary', [ReportController::class, 'certificateSummary'])->name('certificate-summary');
     });
 });
 
