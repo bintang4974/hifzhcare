@@ -203,7 +203,7 @@ class UstadzController extends Controller
             'user',
             'activeClasses.activeSantri',
             'verifiedHafalans' => function ($q) {
-                $q->latest()->take(10);
+                $q->with(['user'])->latest()->take(10);
             }
         ]);
 
