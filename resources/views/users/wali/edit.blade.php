@@ -153,15 +153,15 @@
                             <strong>Informasi:</strong>
                         </p>
                         <p class="text-xs text-purple-700 mt-1">
-                            Jumlah Anak: {{ $wali->santris->count() }} santri •
+                            Jumlah Anak: {{ $wali->santriProfiles->count() }} santri •
                             Total Donasi: Rp
-                            {{ number_format($wali->donations()->where('status', 'verified')->sum('amount'), 0, ',', '.') }}
+                            {{ number_format($wali->appreciationFunds()->where('status', 'verified')->sum('amount'), 0, ',', '.') }}
                         </p>
-                        @if ($wali->santris->count() > 0)
+                        @if ($wali->santriProfiles->count() > 0)
                             <div class="mt-2">
                                 <p class="text-xs font-semibold text-purple-800">Anak-anak:</p>
                                 <div class="flex flex-wrap gap-1 mt-1">
-                                    @foreach ($wali->santris as $santri)
+                                    @foreach ($wali->santriProfiles as $santri)
                                         <span class="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded">
                                             {{ $santri->user->name }}
                                         </span>

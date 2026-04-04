@@ -226,8 +226,8 @@
 
                 @can('manage_certificates')
                     <!-- Certificates -->
-                    {{-- <a href="{{ route('certificates.index') }}" --}}
-                    <a href=""
+                    <a href="{{ route('certificates.index') }}"
+                    {{-- <a href="" --}}
                         class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all {{ request()->routeIs('certificates.*') ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-gray-700 hover:bg-gray-50' }}">
                         <i
                             class="fas fa-certificate mr-3 {{ request()->routeIs('certificates.*') ? 'text-blue-600' : 'text-gray-400' }}"></i>

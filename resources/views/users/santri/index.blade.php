@@ -4,75 +4,75 @@
 @section('breadcrumb', 'Pengguna / Santri')
 
 @section('content')
-    <div class="space-y-6">
+    <div class="space-y-4 md:space-y-6">
         <!-- Page Header -->
-        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div>
-                <h1 class="text-3xl font-bold text-gray-900">Manajemen Santri</h1>
-                <p class="text-gray-600 mt-1">Kelola data santri dan monitor perkembangan hafalan</p>
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+            <div class="min-w-0">
+                <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Manajemen Santri</h1>
+                <p class="text-sm sm:text-base text-gray-600 mt-1">Kelola data santri dan monitor perkembangan hafalan</p>
             </div>
             <a href="{{ route('users.santri.create') }}"
-                class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all">
+                class="inline-flex items-center justify-center sm:justify-start px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm sm:text-base font-semibold rounded-lg sm:rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all flex-shrink-0 whitespace-nowrap">
                 <i class="fas fa-plus-circle mr-2"></i>
                 Tambah Santri
             </a>
         </div>
 
         <!-- Stats Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-blue-100 text-sm mb-1">Total Santri</p>
-                        <h3 class="text-3xl font-bold" id="total-santri">-</h3>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
+            <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg sm:rounded-xl p-3 sm:p-6 text-white shadow-lg">
+                <div class="flex flex-col items-start justify-between h-full">
+                    <div class="w-full">
+                        <p class="text-blue-100 text-xs sm:text-sm mb-1">Total Santri</p>
+                        <h3 class="text-xl sm:text-3xl font-bold" id="total-santri">-</h3>
                     </div>
-                    <div class="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-users text-2xl"></i>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white shadow-lg">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-green-100 text-sm mb-1">Aktif</p>
-                        <h3 class="text-3xl font-bold" id="active-santri">-</h3>
-                    </div>
-                    <div class="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-check-circle text-2xl"></i>
+                    <div class="w-10 sm:w-12 h-10 sm:h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mt-2 sm:mt-0">
+                        <i class="fas fa-users text-lg sm:text-2xl"></i>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl p-6 text-white shadow-lg">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-yellow-100 text-sm mb-1">Pending</p>
-                        <h3 class="text-3xl font-bold" id="pending-santri">-</h3>
+            <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-lg sm:rounded-xl p-3 sm:p-6 text-white shadow-lg">
+                <div class="flex flex-col items-start justify-between h-full">
+                    <div class="w-full">
+                        <p class="text-green-100 text-xs sm:text-sm mb-1">Aktif</p>
+                        <h3 class="text-xl sm:text-3xl font-bold" id="active-santri">-</h3>
                     </div>
-                    <div class="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-hourglass-half text-2xl"></i>
+                    <div class="w-10 sm:w-12 h-10 sm:h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mt-2 sm:mt-0">
+                        <i class="fas fa-check-circle text-lg sm:text-2xl"></i>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white shadow-lg">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-purple-100 text-sm mb-1">Lulus</p>
-                        <h3 class="text-3xl font-bold" id="graduated-santri">-</h3>
+            <div class="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg sm:rounded-xl p-3 sm:p-6 text-white shadow-lg">
+                <div class="flex flex-col items-start justify-between h-full">
+                    <div class="w-full">
+                        <p class="text-yellow-100 text-xs sm:text-sm mb-1">Pending</p>
+                        <h3 class="text-xl sm:text-3xl font-bold" id="pending-santri">-</h3>
                     </div>
-                    <div class="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-graduation-cap text-2xl"></i>
+                    <div class="w-10 sm:w-12 h-10 sm:h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mt-2 sm:mt-0">
+                        <i class="fas fa-hourglass-half text-lg sm:text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg sm:rounded-xl p-3 sm:p-6 text-white shadow-lg">
+                <div class="flex flex-col items-start justify-between h-full">
+                    <div class="w-full">
+                        <p class="text-purple-100 text-xs sm:text-sm mb-1">Lulus</p>
+                        <h3 class="text-xl sm:text-3xl font-bold" id="graduated-santri">-</h3>
+                    </div>
+                    <div class="w-10 sm:w-12 h-10 sm:h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mt-2 sm:mt-0">
+                        <i class="fas fa-graduation-cap text-lg sm:text-2xl"></i>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Filters Card -->
-        <div class="bg-white rounded-xl shadow-md p-6">
+        <div class="bg-white rounded-lg sm:rounded-xl shadow-md p-3 sm:p-6">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-bold text-gray-900 flex items-center">
+                <h3 class="text-base sm:text-lg font-bold text-gray-900 flex items-center">
                     <i class="fas fa-filter mr-2 text-blue-600"></i>
                     Filter & Pencarian
                 </h3>
@@ -81,15 +81,15 @@
                 </button>
             </div>
 
-            <div id="filter-section" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div id="filter-section" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
                 <!-- Status Filter -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                         <i class="fas fa-info-circle mr-1 text-gray-400"></i>
                         Status
                     </label>
                     <select id="filter-status"
-                        class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition">
+                        class="w-full text-sm rounded-lg border border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 py-1.5 sm:py-2 px-2 sm:px-3">
                         <option value="">Semua Status</option>
                         <option value="pending">Pending</option>
                         <option value="active">Aktif</option>
@@ -100,12 +100,12 @@
 
                 <!-- Class Filter -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                         <i class="fas fa-chalkboard mr-1 text-gray-400"></i>
                         Kelas
                     </label>
                     <select id="filter-class"
-                        class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition">
+                        class="w-full text-sm rounded-lg border border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 py-1.5 sm:py-2 px-2 sm:px-3">
                         <option value="">Semua Kelas</option>
                         @foreach ($classes as $class)
                             <option value="{{ $class->id }}">{{ $class->name }}</option>
@@ -115,12 +115,12 @@
 
                 <!-- Gender Filter -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                         <i class="fas fa-venus-mars mr-1 text-gray-400"></i>
                         Jenis Kelamin
                     </label>
                     <select id="filter-gender"
-                        class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition">
+                        class="w-full text-sm rounded-lg border border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 py-1.5 sm:py-2 px-2 sm:px-3">
                         <option value="">Semua</option>
                         <option value="L">Laki-laki</option>
                         <option value="P">Perempuan</option>
@@ -128,13 +128,13 @@
                 </div>
 
                 <!-- Filter Actions -->
-                <div class="flex items-end gap-2">
+                <div class="col-span-1 sm:col-span-2 lg:col-span-4 flex flex-col sm:flex-row items-stretch gap-2">
                     <button onclick="applyFilters()"
-                        class="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold px-4 py-2.5 rounded-lg shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5">
+                        class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm py-2 rounded-lg transition">
                         <i class="fas fa-search mr-2"></i>Filter
                     </button>
                     <button onclick="resetFilters()"
-                        class="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-semibold px-4 py-2.5 rounded-lg shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5">
+                        class="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-semibold text-sm py-2 rounded-lg transition">
                         <i class="fas fa-redo mr-2"></i>Reset
                     </button>
                 </div>
@@ -142,20 +142,20 @@
         </div>
 
         <!-- DataTable Card -->
-        <div class="bg-white rounded-xl shadow-md overflow-hidden">
+        <div class="bg-white rounded-lg sm:rounded-xl shadow-md overflow-hidden">
             <!-- Table Header -->
-            <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
-                <div class="flex items-center justify-between">
-                    <h3 class="text-lg font-bold text-gray-900">Daftar Santri</h3>
-                    <div class="flex items-center space-x-2">
+            <div class="px-3 sm:px-6 py-3 sm:py-4 border-b border-gray-200 bg-gray-50">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
+                    <h3 class="text-base sm:text-lg font-bold text-gray-900">Daftar Santri</h3>
+                    <div class="flex items-center gap-2">
                         <button onclick="refreshTable()"
                             class="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition"
                             title="Refresh">
                             <i class="fas fa-sync-alt"></i>
                         </button>
                         <button onclick="exportData()"
-                            class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition">
-                            <i class="fas fa-file-excel mr-2"></i>Export Excel
+                            class="px-3 sm:px-4 py-1.5 sm:py-2 bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm font-semibold rounded-lg transition">
+                            <i class="fas fa-file-excel mr-1 sm:mr-2"></i><span class="hidden sm:inline">Export Excel</span><span class="sm:hidden">Export</span>
                         </button>
                     </div>
                 </div>
@@ -163,28 +163,19 @@
 
             <!-- Table Container -->
             <div class="overflow-x-auto">
-                <table id="santri-table" class="min-w-full divide-y divide-gray-200">
+                <table id="santri-table" class="min-w-full divide-y divide-gray-200 text-sm sm:text-base">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">No</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Santri
-                            </th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">NIS
-                            </th>
-                            <th class="px-6 py-4 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
-                                Gender</th>
-                            <th class="px-6 py-4 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">Usia
-                            </th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Wali
-                            </th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Kelas
-                            </th>
-                            <th class="px-6 py-4 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
-                                Progress</th>
-                            <th class="px-6 py-4 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
-                                Status</th>
-                            <th class="px-6 py-4 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">Aksi
-                            </th>
+                            <th class="px-2 sm:px-6 py-2 sm:py-4 text-left text-xs font-bold text-gray-600 uppercase">No</th>
+                            <th class="px-2 sm:px-6 py-2 sm:py-4 text-left text-xs font-bold text-gray-600 uppercase">Santri</th>
+                            <th class="px-2 sm:px-6 py-2 sm:py-4 text-left text-xs font-bold text-gray-600 uppercase hidden sm:table-cell">NIS</th>
+                            <th class="px-2 sm:px-6 py-2 sm:py-4 text-center text-xs font-bold text-gray-600 uppercase hidden md:table-cell">Gender</th>
+                            <th class="px-2 sm:px-6 py-2 sm:py-4 text-center text-xs font-bold text-gray-600 uppercase hidden lg:table-cell">Usia</th>
+                            <th class="px-2 sm:px-6 py-2 sm:py-4 text-left text-xs font-bold text-gray-600 uppercase hidden sm:table-cell">Wali</th>
+                            <th class="px-2 sm:px-6 py-2 sm:py-4 text-left text-xs font-bold text-gray-600 uppercase">Kelas</th>
+                            <th class="px-2 sm:px-6 py-2 sm:py-4 text-center text-xs font-bold text-gray-600 uppercase hidden md:table-cell">Progress</th>
+                            <th class="px-2 sm:px-6 py-2 sm:py-4 text-center text-xs font-bold text-gray-600 uppercase">Status</th>
+                            <th class="px-2 sm:px-6 py-2 sm:py-4 text-center text-xs font-bold text-gray-600 uppercase">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
@@ -244,6 +235,79 @@
         #filter-section.collapsed {
             max-height: 0;
             overflow: hidden;
+        }
+
+        /* Table Styling */
+        #santri-table thead th {
+            background-color: #f9fafb;
+            padding: 8px 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        #santri-table tbody td {
+            padding: 8px 10px;
+            vertical-align: middle;
+            line-height: 1.5;
+        }
+
+        #santri-table tbody tr {
+            transition: background-color 0.2s ease;
+        }
+
+        #santri-table tbody tr:hover {
+            background-color: #f3f4f6;
+        }
+
+        /* Responsive padding */
+        @media (min-width: 640px) {
+            #santri-table thead th {
+                padding: 12px 16px;
+            }
+
+            #santri-table tbody td {
+                padding: 12px 16px;
+            }
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 640px) {
+            #santri-table {
+                font-size: 0.85rem;
+            }
+
+            #santri-table thead th {
+                padding: 6px 8px;
+                font-size: 0.7rem;
+            }
+
+            #santri-table tbody td {
+                padding: 6px 8px;
+            }
+        }
+
+        /* DataTable controls styling */
+        .dataTables_wrapper .dataTables_paginate .paginate_button {
+            padding: 6px 12px;
+            margin-left: 2px;
+            border-radius: 4px;
+            border: 1px solid #d1d5db;
+            background: white;
+            color: #374151;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        .dataTables_wrapper .dataTables_info {
+            padding: 12px 16px;
+            font-size: 0.85rem;
+            color: #6b7280;
         }
     </style>
 @endpush
