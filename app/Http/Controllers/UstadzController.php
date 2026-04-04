@@ -42,13 +42,13 @@ class UstadzController extends Controller
     protected function datatable(Request $request)
     {
         $query = UstadzProfile::with(['user', 'activeClasses'])
+            ->join('users', 'users.id', '=', 'ustadz_profiles.user_id')
+            ->select('ustadz_profiles.*')
             ->where('ustadz_profiles.pesantren_id', session('current_pesantren_id'));
 
         // Filters
         if ($request->filled('status')) {
-            $query->whereHas('user', function ($q) use ($request) {
-                $q->where('users.status', $request->status);
-            });
+            $query->where('users.status', $request->status);
         }
 
         if ($request->filled('specialization')) {
@@ -197,15 +197,15 @@ class UstadzController extends Controller
     /**
      * Display the specified ustadz
      */
-    public function show($id)
+    public function show(UstadzProfile $ustadz)
     {
-        $ustadz = UstadzProfile::with([
+        $ustadz->load([
             'user',
             'activeClasses.activeSantri',
             'verifiedHafalans' => function ($q) {
                 $q->latest()->take(10);
             }
-        ])->findOrFail($id);
+        ]);
 
         // Statistics
         $stats = [
@@ -217,7 +217,7 @@ class UstadzController extends Controller
             'verified_today' => $ustadz->verifiedHafalans()->whereDate('verified_at', today())->count(),
             'verified_this_month' => $ustadz->verifiedHafalans()->whereMonth('verified_at', now()->month)->count(),
             'pending_hafalan' => $ustadz->verifiedHafalans()->where('status', 'pending')->count(),
-            'total_appreciation' => $ustadz->appreciations()->where('status', 'verified')->sum('amount'),
+            'total_appreciation' => $ustadz->appreciationFunds()->where('status', 'verified')->sum('amount'),
         ];
 
         return view('users.ustadz.show', compact('ustadz', 'stats'));
@@ -226,21 +226,20 @@ class UstadzController extends Controller
     /**
      * Show the form for editing the specified ustadz
      */
-    public function edit($id)
+    public function edit(UstadzProfile $ustadz)
     {
         $this->authorize('edit_users');
 
-        $ustadz = UstadzProfile::with('user')->findOrFail($id);
+        $ustadz->load(['user', 'activeClasses', 'verifiedHafalans']);
         return view('users.ustadz.edit', compact('ustadz'));
     }
 
     /**
      * Update the specified ustadz
      */
-    public function update(UpdateUstadzRequest $request, $id)
+    public function update(UpdateUstadzRequest $request, UstadzProfile $ustadz)
     {
         try {
-            $ustadz = UstadzProfile::findOrFail($id);
 
             // Update user data
             $ustadz->user->update([
@@ -271,12 +270,10 @@ class UstadzController extends Controller
     /**
      * Remove the specified ustadz
      */
-    public function destroy($id)
+public function destroy(UstadzProfile $ustadz)
     {
         try {
             $this->authorize('delete_users');
-
-            $ustadz = UstadzProfile::findOrFail($id);
 
             // Check if ustadz has active classes
             if ($ustadz->activeClasses()->count() > 0) {
@@ -303,12 +300,10 @@ class UstadzController extends Controller
     /**
      * Activate ustadz account
      */
-    public function activate(Request $request, $id)
+    public function activate(Request $request, UstadzProfile $ustadz)
     {
         try {
             $this->authorize('activate_users');
-
-            $ustadz = UstadzProfile::findOrFail($id);
 
             $password = $request->password ?: Str::random(8);
 

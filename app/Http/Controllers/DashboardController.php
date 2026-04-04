@@ -195,14 +195,14 @@ class DashboardController extends Controller
         }
 
         $stats = [
-            'total_children' => $wali->santris()->count(),
-            'total_donations' => $wali->appreciationFundDonations()
+            'total_children' => $wali->santriProfiles()->count(),
+            'total_donations' => $wali->appreciationFunds()
                 ->where('status', 'verified')
                 ->sum('amount'),
         ];
 
         // My children
-        $children = $wali->santris()
+        $children = $wali->santriProfiles()
             ->with(['user', 'activeClasses'])
             ->get();
 
@@ -217,7 +217,7 @@ class DashboardController extends Controller
         });
 
         // Recent donations
-        $recentDonations = $wali->appreciationFundDonations()
+        $recentDonations = $wali->appreciationFunds()
             ->latest()
             ->take(5)
             ->with(['verifiedBy.user', 'user'])
@@ -303,7 +303,7 @@ class DashboardController extends Controller
     {
         $progress = [];
         for ($juz = 1; $juz <= 30; $juz++) {
-            $verified = Hafalan::where('santri_profile_id', $santriProfileId)
+            $verified = Hafalan::where('user_id', $santriProfileId)
                 ->where('juz_number', $juz)
                 ->where('status', 'verified')
                 ->count();

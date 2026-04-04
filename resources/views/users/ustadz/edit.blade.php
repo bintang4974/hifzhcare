@@ -158,8 +158,8 @@
                             @endif
                         </p>
                         <p class="text-xs text-blue-700 mt-1">
-                            Kelas: {{ $ustadz->assignedClasses->count() }} kelas •
-                            Hafalan Diverifikasi: {{ $ustadz->verifiedHafalans()->count() }}
+                            Kelas: {{ $ustadz->activeClasses->count() }} kelas •
+                            Hafalan Diverifikasi: {{ $ustadz->verifiedHafalans->count() }}
                         </p>
                     </div>
                 </div>

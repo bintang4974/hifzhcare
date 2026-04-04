@@ -16,9 +16,8 @@ class ClassController extends Controller
     public function __construct(
         protected ClassService $classService
     ) {
-        // Most class actions require management permission, but allow `show`
-        // to be accessed by authenticated users (ustadz can view their classes).
-        $this->middleware('can:manage_classes')->except(['show']);
+        // Protect only write operations and destructive actions
+        $this->middleware('can:manage_classes')->only(['store', 'update', 'destroy', 'assignUstadz', 'removeUstadz']);
     }
 
     /**
