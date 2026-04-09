@@ -14,6 +14,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Trust ngrok and other proxies
+        $middleware->trustProxies(at: '*');
+        
         // Register middleware aliases
         $middleware->alias([
             'tenant' => \App\Http\Middleware\TenantMiddleware::class,

@@ -3,6 +3,7 @@
 namespace App;
 
 use App\Models\AuditLog;
+use App\Jobs\CreateAuditLogJob;
 
 trait Auditable
 {

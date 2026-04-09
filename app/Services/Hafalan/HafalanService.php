@@ -2,15 +2,15 @@
 
 namespace App\Services\Hafalan;
 
+use App\Events\Hafalan\HafalanCreated;
+use App\Events\Hafalan\HafalanVerified;
 use App\Models\Hafalan;
 use App\Models\HafalanAudio;
 use App\Models\SantriProfile;
 use App\Models\GeneralUserProfile;
 use App\Repositories\Contracts\HafalanRepositoryInterface;
 use App\Support\Helpers\QuranHelper;
-use App\Jobs\Audio\CompressAudioJob;
-use App\Events\Hafalan\HafalanCreated;
-use App\Events\Hafalan\HafalanVerified;
+use App\Jobs\CompressAudioJob;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\UploadedFile;
@@ -32,6 +32,16 @@ class HafalanService
         DB::beginTransaction();
 
         try {
+            // Auto-fill created_by_user_id from auth
+            if (empty($data['created_by_user_id'])) {
+                $data['created_by_user_id'] = auth()->id();
+            }
+            
+            // Auto-fill pesantren_id from auth user if not provided
+            if (empty($data['pesantren_id']) && auth()->user()->pesantren_id) {
+                $data['pesantren_id'] = auth()->user()->pesantren_id;
+            }
+
             // Auto-calculate juz_number if not provided
             if (empty($data['juz_number'])) {
                 $data['juz_number'] = QuranHelper::getJuzNumber(
@@ -232,8 +242,8 @@ class HafalanService
             'status' => 'pending',
         ]);
 
-        // Dispatch compression job
-        CompressAudioJob::dispatch($audio->id);
+        // Dispatch compression job with audio ID and file path
+        CompressAudioJob::dispatch($audio->id, $filePath);
 
         return $audio;
     }
