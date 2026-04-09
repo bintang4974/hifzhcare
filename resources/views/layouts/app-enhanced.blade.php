@@ -237,8 +237,8 @@
 
                 @can('view_reports')
                     <!-- Reports -->
-                    {{-- <a href="{{ route('reports.index') }}" --}}
-                    <a href=""
+                    <a href="{{ route('reports.index') }}"
+                    {{-- <a href="" --}}
                         class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all {{ request()->routeIs('reports.*') ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-gray-700 hover:bg-gray-50' }}">
                         <i
                             class="fas fa-chart-bar mr-3 {{ request()->routeIs('reports.*') ? 'text-blue-600' : 'text-gray-400' }}"></i>

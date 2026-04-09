@@ -22,11 +22,19 @@ class HafalanAudio extends Model
         'file_size',
         'duration_seconds',
         'status',
+        'original_audio_size',
+        'compressed_audio_size',
+        'compression_ratio',
+        'is_compressed',
     ];
 
     protected $casts = [
         'file_size' => 'integer',
         'duration_seconds' => 'integer',
+        'original_audio_size' => 'integer',
+        'compressed_audio_size' => 'integer',
+        'compression_ratio' => 'decimal:2',
+        'is_compressed' => 'boolean',
     ];
 
     // ============================================

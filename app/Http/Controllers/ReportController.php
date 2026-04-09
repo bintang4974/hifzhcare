@@ -3,502 +3,719 @@
 namespace App\Http\Controllers;
 
 use App\Models\SantriProfile;
-use App\Models\Hafalan;
+use App\Models\UstadzProfile;
 use App\Models\Certificate;
+use App\Models\Hafalan;
 use App\Models\Classes;
-use App\Models\User;
-use App\Models\Pesantren;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-use PhpOffice\PhpSpreadsheet\Writer\Csv;
-use Carbon\Carbon;
+use App\Exports\SantriDataExport;
+use App\Exports\HafalanSummaryExport;
+use App\Exports\CertificateSummaryExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ReportController extends Controller
 {
-    protected $pesantren;
-
     public function __construct()
     {
-        // Middleware protection is handled in routes
-        $this->pesantren = Pesantren::first(); // Get default/current pesantren
+        $this->middleware('auth');
+        $this->middleware('tenant');
     }
 
     /**
-     * Display the reports index page
+     * Display admin report dashboard
      */
     public function index()
     {
+        $pesantrenId = auth()->user()->pesantren_id;
+
+        // Statistics
         $stats = [
-            'total_santri' => SantriProfile::where('pesantren_id', $this->pesantren->id)->count(),
-            'total_hafalan' => Hafalan::where('pesantren_id', $this->pesantren->id)->count(),
-            'total_certificates' => Certificate::where('pesantren_id', $this->pesantren->id)->count(),
-            'total_classes' => Classes::where('pesantren_id', $this->pesantren->id)->count(),
+            'total_santri' => SantriProfile::where('pesantren_id', $pesantrenId)->count(),
+            'total_hafalan' => Hafalan::where('pesantren_id', $pesantrenId)
+                ->where('status', 'verified')
+                ->count(),
+            'total_certificates' => Certificate::where('pesantren_id', $pesantrenId)->count(),
+            'total_classes' => Classes::where('pesantren_id', $pesantrenId)->count(),
         ];
 
-        $classes = Classes::where('pesantren_id', $this->pesantren->id)->get();
-        $recentReports = collect([]); // Placeholder for recent reports
+        // Classes for filter
+        $classes = Classes::where('pesantren_id', $pesantrenId)
+            ->orderBy('name')
+            ->get();
+
+        // Recent reports (from database if you store them)
+        $recentReports = collect([]); // TODO: Implement report history
 
         return view('reports.index', compact('stats', 'classes', 'recentReports'));
     }
 
     /**
-     * SANTRI REPORTS
-     */
-
-    /**
-     * Generate Santri Data Report
+     * SANTRI DATA REPORT
      */
     public function santriData(Request $request)
     {
-        $query = SantriProfile::with(['user', 'waliProfile.user', 'classes', 'hafalans'])
-            ->where('pesantren_id', $this->pesantren->id);
+        $validated = $request->validate([
+            'format' => 'required|in:pdf,excel,csv',
+            'class_id' => 'nullable|exists:classes,id',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+        ]);
 
-        // Apply filters
-        if ($request->filled('start_date') && $request->filled('end_date')) {
-            $query->whereBetween('created_at', [
-                Carbon::parse($request->start_date)->startOfDay(),
-                Carbon::parse($request->end_date)->endOfDay()
+        $pesantrenId = auth()->user()->pesantren_id;
+
+        // Query
+        $query = SantriProfile::where('pesantren_id', $pesantrenId)
+            ->with(['user', 'wali.user', 'classes'])
+            ->withCount([
+                'hafalans as verified_count' => function ($q) {
+                    $q->where('status', 'verified');
+                },
+                'certificates as certificates_count'
             ]);
-        }
 
+        // Filters
         if ($request->filled('class_id')) {
-            $query->whereHas('classes', function ($q) {
-                $q->where('class_id', request('class_id'));
+            $query->whereHas('classes', function ($q) use ($request) {
+                $q->where('class_id', $request->class_id);
             });
         }
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
+        if ($request->filled('start_date')) {
+            $query->whereDate('created_at', '>=', $request->start_date);
         }
 
-        $santris = $query->orderBy('created_at', 'desc')->get();
+        if ($request->filled('end_date')) {
+            $query->whereDate('created_at', '<=', $request->end_date);
+        }
 
-        return $this->generateReport('Laporan Data Santri', 'santri_data', $santris, $request->format ?? 'pdf', [
-            'columns' => ['No', 'Nama Santri', 'Kelas', 'No. Induk', 'Jenis Kelamin', 'Tempat Lahir', 'Tanggal Lahir', 'Wali'],
-            'data' => $santris->map(function ($santri, $index) {
-                return [
-                    $index + 1,
-                    $santri->user->name ?? '-',
-                    $santri->classes->pluck('name')->join(', ') ?? '-',
-                    $santri->student_id ?? '-',
-                    $santri->gender ?? '-',
-                    $santri->birth_place ?? '-',
-                    $santri->birth_date ? $santri->birth_date->format('d/m/Y') : '-',
-                    $santri->waliProfile?->user->name ?? '-',
-                ];
-            })->toArray()
-        ]);
+        $santris = $query->orderBy('nis')->get();
+
+        // Generate based on format
+        switch ($validated['format']) {
+            case 'pdf':
+                return $this->generateSantriDataPDF($santris);
+            case 'excel':
+                return $this->generateSantriDataExcel($santris);
+            case 'csv':
+                return $this->generateSantriDataCSV($santris);
+        }
+    }
+
+    private function generateSantriDataPDF($santris)
+    {
+        $pesantren = auth()->user()->pesantren;
+
+        $pdf = Pdf::loadView('reports.pdf.santri-data', [
+            'santris' => $santris,
+            'pesantren' => $pesantren,
+            'generated_at' => now(),
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->download('Laporan-Data-Santri-' . date('Y-m-d') . '.pdf');
+    }
+
+    private function generateSantriDataExcel($santris)
+    {
+        return Excel::download(
+            new SantriDataExport($santris),
+            'Laporan-Data-Santri-' . date('Y-m-d') . '.xlsx'
+        );
+    }
+
+    private function generateSantriDataCSV($santris)
+    {
+        return Excel::download(
+            new SantriDataExport($santris),
+            'Laporan-Data-Santri-' . date('Y-m-d') . '.csv',
+            \Maatwebsite\Excel\Excel::CSV
+        );
     }
 
     /**
-     * Generate Santri Progress Report
+     * SANTRI PROGRESS REPORT
      */
     public function santriProgress(Request $request)
     {
-        $query = SantriProfile::with(['user', 'hafalans'])
-            ->where('pesantren_id', $this->pesantren->id);
+        $validated = $request->validate([
+            'format' => 'required|in:pdf,excel',
+            'class_id' => 'nullable|exists:classes,id',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+        ]);
 
-        // Apply filters
-        if ($request->filled('start_date') && $request->filled('end_date')) {
-            $query->whereBetween('created_at', [
-                Carbon::parse($request->start_date)->startOfDay(),
-                Carbon::parse($request->end_date)->endOfDay()
+        $pesantrenId = auth()->user()->pesantren_id;
+
+        // Query santri with progress
+        $query = SantriProfile::where('pesantren_id', $pesantrenId)
+            ->with(['user', 'classes'])
+            ->withCount([
+                'hafalans as verified_count' => function ($q) {
+                    $q->where('status', 'verified');
+                }
             ]);
-        }
 
         if ($request->filled('class_id')) {
-            $query->whereHas('classes', function ($q) {
-                $q->where('class_id', request('class_id'));
+            $query->whereHas('classes', function ($q) use ($request) {
+                $q->where('class_id', $request->class_id);
             });
         }
 
-        $santris = $query->orderBy('created_at', 'desc')->get();
+        $santris = $query->orderByDesc('total_juz_completed')->get();
 
-        $data = $santris->map(function ($santri) {
-            $totalHafalan = $santri->hafalans->count();
-            $verifiedHafalan = $santri->hafalans->whereNotNull('verified_at')->count();
-            $percentageVerified = $totalHafalan > 0 ? round(($verifiedHafalan / $totalHafalan) * 100, 2) : 0;
+        // Add monthly progress data
+        foreach ($santris as $santri) {
+            $santri->monthly_progress = $this->getMonthlyProgress($santri->id);
+        }
 
-            return [
-                $santri->user->name ?? '-',
-                $santri->student_id ?? '-',
-                $totalHafalan,
-                $verifiedHafalan,
-                $totalHafalan - $verifiedHafalan,
-                $percentageVerified . '%'
-            ];
-        })->toArray();
+        if ($validated['format'] === 'pdf') {
+            return $this->generateProgressPDF($santris);
+        } else {
+            return $this->generateProgressExcel($santris);
+        }
+    }
 
-        return $this->generateReport('Laporan Progress Hafalan', 'santri_progress', $data, $request->format ?? 'pdf', [
-            'columns' => ['Nama Santri', 'No. Induk', 'Total Hafalan', 'Terverifikasi', 'Pending', 'Progress %'],
-            'data' => $data
-        ]);
+    private function getMonthlyProgress($santriId)
+    {
+        $santri = SantriProfile::find($santriId);
+        
+        return Hafalan::where('user_id', $santri->user_id)
+            ->where('status', 'verified')
+            ->selectRaw('MONTH(verified_at) as month, COUNT(*) as count')
+            ->whereYear('verified_at', date('Y'))
+            ->groupBy('month')
+            ->orderBy('month')
+            ->pluck('count', 'month')
+            ->toArray();
+    }
+
+    private function generateProgressPDF($santris)
+    {
+        $pesantren = auth()->user()->pesantren;
+
+        $pdf = Pdf::loadView('reports.pdf.santri-progress', [
+            'santris' => $santris,
+            'pesantren' => $pesantren,
+            'generated_at' => now(),
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download('Laporan-Progress-Hafalan-' . date('Y-m-d') . '.pdf');
+    }
+
+    private function generateProgressExcel($santris)
+    {
+        // TODO: Create ProgressExport class
+        return response()->json(['message' => 'Excel export for progress coming soon']);
     }
 
     /**
-     * Generate Santri Ranking Report
+     * SANTRI RANKING REPORT
      */
     public function santriRanking(Request $request)
     {
-        $query = SantriProfile::with(['user', 'hafalans'])
-            ->where('pesantren_id', $this->pesantren->id);
+        $validated = $request->validate([
+            'format' => 'required|in:pdf,excel',
+            'class_id' => 'nullable|exists:classes,id',
+        ]);
+
+        $pesantrenId = auth()->user()->pesantren_id;
+
+        // Top performers
+        $query = SantriProfile::where('pesantren_id', $pesantrenId)
+            ->with(['user', 'classes'])
+            ->withCount([
+                'hafalans as verified_count' => function ($q) {
+                    $q->where('status', 'verified');
+                },
+                'certificates'
+            ]);
 
         if ($request->filled('class_id')) {
-            $query->whereHas('classes', function ($q) {
-                $q->where('class_id', request('class_id'));
+            $query->whereHas('classes', function ($q) use ($request) {
+                $q->where('class_id', $request->class_id);
             });
         }
 
-        $santris = $query->orderBy('created_at', 'desc')->get();
+        $topPerformers = $query->orderByDesc('total_juz_completed')
+            ->orderByDesc('verified_count')
+            ->limit(20)
+            ->get();
 
-        // Calculate rankings
-        $rankings = $santris->map(function ($santri) {
-            $verifiedHafalan = $santri->hafalans->whereNotNull('verified_at')->count();
-            return [
-                'santri' => $santri,
-                'verified_count' => $verifiedHafalan
-            ];
-        })->sortByDesc('verified_count')->values();
+        $pesantren = auth()->user()->pesantren;
 
-        $data = $rankings->map(function ($item, $index) {
-            return [
-                $index + 1,
-                $item['santri']->user->name ?? '-',
-                $item['santri']->student_id ?? '-',
-                $item['verified_count'],
-                $item['santri']->hafalans->count()
-            ];
-        })->toArray();
+        if ($validated['format'] === 'pdf') {
+            $pdf = Pdf::loadView('reports.pdf.santri-ranking', [
+                'santris' => $topPerformers,
+                'pesantren' => $pesantren,
+                'generated_at' => now(),
+            ])->setPaper('a4', 'portrait');
 
-        return $this->generateReport('Laporan Ranking & Achievement', 'santri_ranking', $data, $request->format ?? 'pdf', [
-            'columns' => ['Ranking', 'Nama Santri', 'No. Induk', 'Hafalan Terverifikasi', 'Total Hafalan'],
-            'data' => $data
-        ]);
+            return $pdf->download('Laporan-Ranking-' . date('Y-m-d') . '.pdf');
+        }
+
+        // Excel format
+        return response()->json(['message' => 'Excel export coming soon']);
     }
 
     /**
-     * CLASS REPORTS
-     */
-
-    /**
-     * Generate Class Overview Report
+     * CLASS OVERVIEW REPORT
      */
     public function classOverview(Request $request)
     {
-        $classes = Classes::with(['santris', 'ustadzs', 'hafalans'])
-            ->where('pesantren_id', $this->pesantren->id)
-            ->orderBy('name')
+        $validated = $request->validate([
+            'format' => 'required|in:pdf,excel',
+        ]);
+
+        $pesantrenId = auth()->user()->pesantren_id;
+
+        $classes = Classes::where('pesantren_id', $pesantrenId)
+            ->with(['ustadz.user', 'santriProfiles'])
+            ->withCount(['santriProfiles as total_santri'])
             ->get();
 
-        $data = $classes->map(function ($class) {
-            return [
-                $class->name,
-                $class->santris->count(),
-                $class->ustadzs->count(),
-                $class->hafalans->count(),
-                $class->hafalans->whereNotNull('verified_at')->count(),
-            ];
-        })->toArray();
+        // Add statistics for each class
+        foreach ($classes as $class) {
+            // Calculate average progress from loaded santriProfiles
+            $avgJuz = $class->santriProfiles->avg('total_juz_completed') ?? 0;
+            $class->avg_progress = round(($avgJuz / 30) * 100, 2);
+            
+            $userIds = $class->santriProfiles->pluck('user_id');
+            
+            $class->total_verified = Hafalan::whereIn(
+                'user_id',
+                $userIds
+            )->where('status', 'verified')->count();
 
-        return $this->generateReport('Laporan Overview Kelas', 'class_overview', $data, $request->format ?? 'pdf', [
-            'columns' => ['Nama Kelas', 'Total Santri', 'Total Ustadz', 'Total Hafalan', 'Terverifikasi'],
-            'data' => $data
-        ]);
+            $class->total_certificates = Certificate::whereIn(
+                'user_id',
+                $userIds
+            )->count();
+        }
+
+        $pesantren = auth()->user()->pesantren;
+
+        if ($validated['format'] === 'pdf') {
+            $pdf = Pdf::loadView('reports.pdf.class-overview', [
+                'classes' => $classes,
+                'pesantren' => $pesantren,
+                'generated_at' => now(),
+            ])->setPaper('a4', 'landscape');
+
+            return $pdf->download('Laporan-Overview-Kelas-' . date('Y-m-d') . '.pdf');
+        }
+
+        return response()->json(['message' => 'Excel export coming soon']);
     }
 
     /**
-     * Generate Class Performance Report
+     * CLASS PERFORMANCE REPORT
      */
     public function classPerformance(Request $request)
     {
-        $query = Classes::with(['santris', 'hafalans'])
-            ->where('pesantren_id', $this->pesantren->id);
+        $validated = $request->validate([
+            'format' => 'required|in:pdf,excel',
+            'class_id' => 'nullable|exists:classes,id',
+        ]);
+
+        $pesantrenId = auth()->user()->pesantren_id;
+
+        $query = Classes::where('pesantren_id', $pesantrenId)
+            ->with(['ustadz.user', 'santriProfiles.user']);
 
         if ($request->filled('class_id')) {
             $query->where('id', $request->class_id);
         }
 
-        $classes = $query->orderBy('name')->get();
+        $classes = $query->get();
 
-        $data = $classes->map(function ($class) {
-            $totalHafalan = $class->hafalans->count();
-            $verifiedHafalan = $class->hafalans->whereNotNull('verified_at')->count();
-            $percentageVerified = $totalHafalan > 0 ? round(($verifiedHafalan / $totalHafalan) * 100, 2) : 0;
+        // Detailed performance metrics
+        foreach ($classes as $class) {
+            $userIds = $class->santriProfiles->pluck('user_id');
+            
+            // Calculate average progress percentage
+            $avgJuz = $class->santriProfiles->avg('total_juz_completed') ?? 0;
+            $avgProgress = round(($avgJuz / 30) * 100, 2);
+            
+            // Count santri with 100% completion
+            $completedCount = $class->santriProfiles->filter(function ($santri) {
+                return $santri->total_juz_completed >= 30;
+            })->count();
 
-            return [
-                $class->name,
-                $class->santris->count(),
-                $totalHafalan,
-                $verifiedHafalan,
-                $totalHafalan - $verifiedHafalan,
-                $percentageVerified . '%'
+            $class->metrics = [
+                'total_santri' => $class->santriProfiles->count(),
+                'active_santri' => $class->santriProfiles->where('graduation_date', null)->count(),
+                'avg_progress' => $avgProgress,
+                'total_verified' => Hafalan::whereIn('user_id', $userIds)
+                    ->where('status', 'verified')->count(),
+                'total_certificates' => Certificate::whereIn('user_id', $userIds)->count(),
+                'completion_rate' => $completedCount,
             ];
-        })->toArray();
 
-        return $this->generateReport('Laporan Performance Kelas', 'class_performance', $data, $request->format ?? 'pdf', [
-            'columns' => ['Nama Kelas', 'Total Santri', 'Total Hafalan', 'Terverifikasi', 'Pending', 'Progress %'],
-            'data' => $data
-        ]);
+            // Monthly trend
+            $class->monthly_trend = Hafalan::whereIn('user_id', $userIds)
+                ->where('status', 'verified')
+                ->selectRaw('MONTH(verified_at) as month, COUNT(*) as count')
+                ->whereYear('verified_at', date('Y'))
+                ->groupBy('month')
+                ->orderBy('month')
+                ->pluck('count', 'month')
+                ->toArray();
+        }
+
+        $pesantren = auth()->user()->pesantren;
+
+        if ($validated['format'] === 'pdf') {
+            $pdf = Pdf::loadView('reports.pdf.class-performance', [
+                'classes' => $classes,
+                'pesantren' => $pesantren,
+                'generated_at' => now(),
+            ])->setPaper('a4', 'landscape');
+
+            return $pdf->download('Laporan-Performance-Kelas-' . date('Y-m-d') . '.pdf');
+        }
+
+        return response()->json(['message' => 'Excel export coming soon']);
     }
 
     /**
-     * HAFALAN REPORTS
-     */
-
-    /**
-     * Generate Hafalan Summary Report
+     * HAFALAN SUMMARY REPORT
      */
     public function hafalanSummary(Request $request)
     {
-        $query = Hafalan::with(['santriProfile.user', 'surah'])
-            ->where('pesantren_id', $this->pesantren->id);
+        $validated = $request->validate([
+            'format' => 'required|in:pdf,excel',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+        ]);
 
-        if ($request->filled('start_date') && $request->filled('end_date')) {
-            $query->whereBetween('created_at', [
-                Carbon::parse($request->start_date)->startOfDay(),
-                Carbon::parse($request->end_date)->endOfDay()
-            ]);
+        $pesantrenId = auth()->user()->pesantren_id;
+
+        $query = Hafalan::where('pesantren_id', $pesantrenId);
+
+        if ($request->filled('start_date')) {
+            $query->whereDate('created_at', '>=', $request->start_date);
         }
 
-        $hafalans = $query->get();
+        if ($request->filled('end_date')) {
+            $query->whereDate('created_at', '<=', $request->end_date);
+        }
 
-        $totalHafalan = $hafalans->count();
-        $totalVerified = $hafalans->whereNotNull('verified_at')->count();
-        $totalPending = $hafalans->whereNull('verified_at')->count();
-        $percentageVerified = $totalHafalan > 0 ? round(($totalVerified / $totalHafalan) * 100, 2) : 0;
-
-        $summaryData = [
-            ['Metrik', 'Jumlah'],
-            ['Total Hafalan', $totalHafalan],
-            ['Terverifikasi', $totalVerified],
-            ['Pending Verifikasi', $totalPending],
-            ['Persentase Terverifikasi', $percentageVerified . '%'],
+        // Statistics
+        $stats = [
+            'total_submitted' => $query->count(),
+            'total_verified' => (clone $query)->where('status', 'verified')->count(),
+            'total_pending' => (clone $query)->where('status', 'pending')->count(),
+            'total_rejected' => (clone $query)->where('status', 'rejected')->count(),
+            'verification_rate' => 0,
+            'avg_verification_time' => 0,
         ];
 
-        return $this->generateReport('Laporan Summary Hafalan', 'hafalan_summary', $summaryData, $request->format ?? 'pdf', [
-            'columns' => $summaryData[0],
-            'data' => array_slice($summaryData, 1)
-        ]);
+        $stats['verification_rate'] = $stats['total_submitted'] > 0
+            ? ($stats['total_verified'] / $stats['total_submitted']) * 100
+            : 0;
+
+        // Average verification time (in hours)
+        $stats['avg_verification_time'] = Hafalan::where('pesantren_id', $pesantrenId)
+            ->where('status', 'verified')
+            ->whereNotNull('verified_at')
+            ->selectRaw('AVG(TIMESTAMPDIFF(HOUR, created_at, verified_at)) as avg_hours')
+            ->value('avg_hours') ?? 0;
+
+        // Monthly trend
+        $monthlyTrend = Hafalan::where('pesantren_id', $pesantrenId)
+            ->where('status', 'verified')
+            ->selectRaw('MONTH(verified_at) as month, COUNT(*) as count')
+            ->whereYear('verified_at', date('Y'))
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get();
+
+        // By status distribution
+        $statusDistribution = Hafalan::where('pesantren_id', $pesantrenId)
+            ->selectRaw('status, COUNT(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status');
+
+        $pesantren = auth()->user()->pesantren;
+
+        if ($validated['format'] === 'pdf') {
+            $pdf = Pdf::loadView('reports.pdf.hafalan-summary', [
+                'stats' => $stats,
+                'monthlyTrend' => $monthlyTrend,
+                'statusDistribution' => $statusDistribution,
+                'pesantren' => $pesantren,
+                'generated_at' => now(),
+            ])->setPaper('a4', 'portrait');
+
+            return $pdf->download('Laporan-Summary-Hafalan-' . date('Y-m-d') . '.pdf');
+        }
+
+        return Excel::download(
+            new HafalanSummaryExport($stats, $monthlyTrend),
+            'Laporan-Summary-Hafalan-' . date('Y-m-d') . '.xlsx'
+        );
     }
 
     /**
-     * Generate Hafalan per Juz Report
+     * HAFALAN PER JUZ REPORT
      */
     public function hafalanJuz(Request $request)
     {
-        $query = Hafalan::with(['santriProfile.user'])
-            ->where('pesantren_id', $this->pesantren->id);
+        $validated = $request->validate([
+            'format' => 'required|in:pdf,excel',
+        ]);
 
-        if ($request->filled('start_date') && $request->filled('end_date')) {
-            $query->whereBetween('created_at', [
-                Carbon::parse($request->start_date)->startOfDay(),
-                Carbon::parse($request->end_date)->endOfDay()
-            ]);
+        $pesantrenId = auth()->user()->pesantren_id;
+
+        // Get hafalan grouped by juz (simplified - you'd calculate actual juz from surah)
+        $juzStats = [];
+        for ($juz = 1; $juz <= 30; $juz++) {
+            $juzStats[$juz] = [
+                'total_hafalan' => 0,
+                'total_santri' => 0,
+                'completion_rate' => 0,
+                'avg_time' => 0,
+            ];
         }
 
-        $hafalans = $query->get();
+        // Get certificates per juz
+        $certificatesPerJuz = Certificate::where('pesantren_id', $pesantrenId)
+            ->where('certificate_type', 'per_juz')
+            ->selectRaw('juz_number, COUNT(*) as count')
+            ->groupBy('juz_number')
+            ->pluck('count', 'juz_number');
 
-        // Group by juz
-        $juzData = $hafalans->groupBy('juz_number')->map(function ($juzHafalans) {
-            $total = $juzHafalans->count();
-            $verified = $juzHafalans->whereNotNull('verified_at')->count();
-            $percentage = $total > 0 ? round(($verified / $total) * 100, 2) : 0;
+        foreach ($certificatesPerJuz as $juz => $count) {
+            if (isset($juzStats[$juz])) {
+                $juzStats[$juz]['total_santri'] = $count;
+                $juzStats[$juz]['completion_rate'] = 100; // Simplified
+            }
+        }
 
-            return [
-                'Juz',
-                'Total Hafalan',
-                'Terverifikasi',
-                'Pending',
-                'Progress %'
-            ];
-        });
+        $pesantren = auth()->user()->pesantren;
 
-        $data = $hafalans->groupBy('juz_number')->map(function ($juzHafalans, $juzNumber) {
-            $total = $juzHafalans->count();
-            $verified = $juzHafalans->whereNotNull('verified_at')->count();
-            $percentage = $total > 0 ? round(($verified / $total) * 100, 2) : 0;
+        if ($validated['format'] === 'pdf') {
+            $pdf = Pdf::loadView('reports.pdf.hafalan-juz', [
+                'juzStats' => $juzStats,
+                'pesantren' => $pesantren,
+                'generated_at' => now(),
+            ])->setPaper('a4', 'landscape');
 
-            return [
-                'Juz ' . $juzNumber,
-                $total,
-                $verified,
-                $total - $verified,
-                $percentage . '%'
-            ];
-        })->values()->toArray();
+            return $pdf->download('Laporan-Hafalan-Per-Juz-' . date('Y-m-d') . '.pdf');
+        }
 
-        return $this->generateReport('Laporan Hafalan per Juz', 'hafalan_juz', $data, $request->format ?? 'pdf', [
-            'columns' => ['Juz', 'Total Hafalan', 'Terverifikasi', 'Pending', 'Progress %'],
-            'data' => $data
-        ]);
+        return response()->json(['message' => 'Excel export coming soon']);
     }
 
     /**
-     * CERTIFICATE REPORTS
-     */
-
-    /**
-     * Generate Certificate Summary Report
+     * CERTIFICATE SUMMARY REPORT
      */
     public function certificateSummary(Request $request)
     {
-        $query = Certificate::with(['user', 'template'])
-            ->where('pesantren_id', $this->pesantren->id);
+        $validated = $request->validate([
+            'format' => 'required|in:pdf,excel',
+            'class_id' => 'nullable|exists:classes,id',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+        ]);
 
-        if ($request->filled('start_date') && $request->filled('end_date')) {
-            $query->whereBetween('issued_at', [
-                Carbon::parse($request->start_date)->startOfDay(),
-                Carbon::parse($request->end_date)->endOfDay()
-            ]);
-        }
+        $pesantrenId = auth()->user()->pesantren_id;
+
+        $query = Certificate::where('pesantren_id', $pesantrenId)
+            ->with(['santri.user', 'santri.classes']);
 
         if ($request->filled('class_id')) {
-            $query->whereHas('user.santriProfile.classes', function ($q) {
-                $q->where('class_id', request('class_id'));
+            $query->whereHas('santri', function ($q) use ($request) {
+                $q->where('class_id', $request->class_id);
             });
         }
 
-        $certificates = $query->get();
-
-        // Summary by status
-        $summaryData = [];
-        $statuses = ['pending', 'approved', 'issued', 'rejected'];
-
-        foreach ($statuses as $status) {
-            $count = $certificates->where('status', $status)->count();
-            $displayStatus = match($status) {
-                'pending' => 'Menunggu Persetujuan',
-                'approved' => 'Disetujui',
-                'issued' => 'Diterbitkan',
-                'rejected' => 'Ditolak',
-                default => $status
-            };
-            $summaryData[] = [$displayStatus, $count];
+        if ($request->filled('start_date')) {
+            $query->whereDate('issued_at', '>=', $request->start_date);
         }
 
-        // Add total
-        $summaryData[] = ['Total Sertifikat', $certificates->count()];
-
-        return $this->generateReport('Laporan Summary Sertifikat', 'certificate_summary', $summaryData, $request->format ?? 'pdf', [
-            'columns' => ['Status', 'Jumlah'],
-            'data' => $summaryData
-        ]);
-    }
-
-    /**
-     * Generate and Output Report
-     */
-    private function generateReport($title, $filename, $data, $format = 'pdf', $columns = [])
-    {
-        switch ($format) {
-            case 'excel':
-                return $this->exportExcel($title, $filename, $columns);
-            case 'csv':
-                return $this->exportCsv($title, $filename, $columns);
-            default:
-                return $this->exportPdf($title, $filename, $columns);
+        if ($request->filled('end_date')) {
+            $query->whereDate('issued_at', '<=', $request->end_date);
         }
-    }
 
-    /**
-     * Export to PDF
-     */
-    private function exportPdf($title, $filename, $columns = [])
-    {
-        $data = [
-            'title' => $title,
-            'columns' => $columns['columns'] ?? [],
-            'data' => $columns['data'] ?? [],
-            'generated_at' => now()->format('d/m/Y H:i:s'),
-            'pesantren' => $this->pesantren->name ?? 'Pesantren'
+        $certificates = $query->orderByDesc('issued_at')->get();
+
+        // Statistics
+        $stats = [
+            'total' => $certificates->count(),
+            'per_juz' => $certificates->where('type', 'santri_juz')->count(),
+            'general' => $certificates->whereIn('type', ['general_achievement', 'general_consistency'])->count(),
         ];
 
-        $pdf = Pdf::loadView('reports.pdf-template', $data);
+        // Monthly distribution
+        $monthlyDistribution = $certificates->groupBy(function ($cert) {
+            return $cert->issued_at?->format('Y-m') ?? 'Not Issued';
+        })->map->count();
+
+        $pesantren = auth()->user()->pesantren;
+
+        if ($validated['format'] === 'pdf') {
+            $pdf = Pdf::loadView('reports.pdf.certificate-summary', [
+                'certificates' => $certificates,
+                'stats' => $stats,
+                'monthlyDistribution' => $monthlyDistribution,
+                'pesantren' => $pesantren,
+                'generated_at' => now(),
+            ])->setPaper('a4', 'portrait');
+
+            return $pdf->download('Laporan-Sertifikat-' . date('Y-m-d') . '.pdf');
+        }
+
+        return Excel::download(
+            new CertificateSummaryExport($certificates, $stats),
+            'Laporan-Sertifikat-' . date('Y-m-d') . '.xlsx'
+        );
+    }
+
+    /**
+     * STAKEHOLDER REPORTS
+     */
+    public function stakeholder()
+    {
+        $pesantrenId = auth()->user()->pesantren_id;
+
+        // Recent executive reports
+        $recentReports = collect([]); // TODO: Implement
+
+        return view('reports.stakeholder', compact('recentReports'));
+    }
+
+    public function generateReport(Request $request)
+    {
+        $validated = $request->validate([
+            'report_type' => 'required|in:dashboard-summary,trend-analysis,performance-overview,financial-summary',
+            'period' => 'required|in:this_month,last_month,this_quarter,last_quarter,this_year,custom',
+            'start_date' => 'required_if:period,custom|nullable|date',
+            'end_date' => 'required_if:period,custom|nullable|date',
+            'format' => 'required|in:pdf,excel',
+        ]);
+
+        $pesantrenId = auth()->user()->pesantren_id;
+
+        // Calculate date range
+        $dates = $this->calculateDateRange($validated['period'], $request->start_date, $request->end_date);
+
+        // Generate based on type
+        switch ($validated['report_type']) {
+            case 'dashboard-summary':
+                return $this->generateDashboardSummary($pesantrenId, $dates, $validated['format']);
+            case 'trend-analysis':
+                return $this->generateTrendAnalysis($pesantrenId, $dates, $validated['format']);
+            case 'performance-overview':
+                return $this->generatePerformanceOverview($pesantrenId, $dates, $validated['format']);
+            case 'financial-summary':
+                return $this->generateFinancialSummary($pesantrenId, $dates, $validated['format']);
+        }
+    }
+
+    private function calculateDateRange($period, $startDate, $endDate)
+    {
+        switch ($period) {
+            case 'this_month':
+                return ['start' => now()->startOfMonth(), 'end' => now()->endOfMonth()];
+            case 'last_month':
+                return ['start' => now()->subMonth()->startOfMonth(), 'end' => now()->subMonth()->endOfMonth()];
+            case 'this_quarter':
+                return ['start' => now()->startOfQuarter(), 'end' => now()->endOfQuarter()];
+            case 'last_quarter':
+                return ['start' => now()->subQuarter()->startOfQuarter(), 'end' => now()->subQuarter()->endOfQuarter()];
+            case 'this_year':
+                return ['start' => now()->startOfYear(), 'end' => now()->endOfYear()];
+            case 'custom':
+                return ['start' => $startDate, 'end' => $endDate];
+        }
+    }
+
+    private function generateDashboardSummary($pesantrenId, $dates, $format)
+    {
+        $santris = SantriProfile::where('pesantren_id', $pesantrenId)->get();
         
-        return $pdf->download($filename . '_' . now()->format('Y-m-d_H-i-s') . '.pdf');
+        $data = [
+            'total_santri' => $santris->count(),
+            'active_santri' => $santris->where('graduation_date', null)->count(),
+            'total_ustadz' => UstadzProfile::where('pesantren_id', $pesantrenId)->count(),
+            'total_classes' => Classes::where('pesantren_id', $pesantrenId)->count(),
+            'total_hafalan' => Hafalan::where('pesantren_id', $pesantrenId)
+                ->where('status', 'verified')
+                ->whereBetween('verified_at', [$dates['start'], $dates['end']])
+                ->count(),
+            'total_certificates' => Certificate::where('pesantren_id', $pesantrenId)
+                ->whereBetween('issued_at', [$dates['start'], $dates['end']])
+                ->count(),
+            'completion_rate' => round(($santris->avg('total_juz_completed') / 30) * 100, 2) ?? 0,
+        ];
+
+        $pesantren = auth()->user()->pesantren;
+
+        if ($format === 'pdf') {
+            $pdf = Pdf::loadView('reports.pdf.executive-dashboard', [
+                'data' => $data,
+                'pesantren' => $pesantren,
+                'period' => $dates,
+                'generated_at' => now(),
+            ])->setPaper('a4', 'landscape');
+
+            return $pdf->download('Executive-Dashboard-Summary-' . date('Y-m-d') . '.pdf');
+        }
+
+        return response()->json(['message' => 'Excel format coming soon']);
     }
 
-    /**
-     * Export to Excel
-     */
-    private function exportExcel($title, $filename, $columns = [])
+    private function generateTrendAnalysis($pesantrenId, $dates, $format)
     {
-        $spreadsheet = new Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
-
-        // Set title
-        $sheet->setCellValue('A1', $title);
-        $sheet->mergeCells('A1:Z1');
-        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
-
-        // Set headers
-        $colNum = 1;
-        foreach ($columns['columns'] ?? [] as $header) {
-            $sheet->setCellValueByColumnAndRow($colNum, 3, $header);
-            $colNum++;
-        }
-
-        // Set data
-        $rowNum = 4;
-        foreach ($columns['data'] ?? [] as $row) {
-            $colNum = 1;
-            foreach ($row as $cell) {
-                $sheet->setCellValueByColumnAndRow($colNum, $rowNum, $cell);
-                $colNum++;
-            }
-            $rowNum++;
-        }
-
-        // Auto-fit columns
-        foreach (range(1, $colNum - 1) as $col) {
-            $sheet->getColumnDimensionByColumn($col)->setAutoSize(true);
-        }
-
-        $writer = new Xlsx($spreadsheet);
-        $filename = $filename . '_' . now()->format('Y-m-d_H-i-s') . '.xlsx';
-
-        return response()->streamDownload(function () use ($writer) {
-            $writer->save('php://output');
-        }, $filename, [
-            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        ]);
+        // TODO: Implement trend analysis
+        return response()->json(['message' => 'Trend analysis coming soon']);
     }
 
-    /**
-     * Export to CSV
-     */
-    private function exportCsv($title, $filename, $columns = [])
+    private function generatePerformanceOverview($pesantrenId, $dates, $format)
     {
-        $spreadsheet = new Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
+        // TODO: Implement performance overview
+        return response()->json(['message' => 'Performance overview coming soon']);
+    }
 
-        // Set headers
-        $colNum = 1;
-        foreach ($columns['columns'] ?? [] as $header) {
-            $sheet->setCellValueByColumnAndRow($colNum, 1, $header);
-            $colNum++;
+    private function generateFinancialSummary($pesantrenId, $dates, $format)
+    {
+        // TODO: Implement financial summary
+        return response()->json(['message' => 'Financial summary coming soon']);
+    }
+
+    public function quickReport(Request $request)
+    {
+        $type = $request->get('type');
+        $pesantrenId = auth()->user()->pesantren_id;
+
+        // Generate quick reports without filters
+        switch ($type) {
+            case 'monthly-highlights':
+                return $this->generateMonthlyHighlights($pesantrenId);
+            case 'student-metrics':
+                return $this->generateStudentMetrics($pesantrenId);
+            case 'achievement-summary':
+                return $this->generateAchievementSummary($pesantrenId);
         }
+    }
 
-        // Set data
-        $rowNum = 2;
-        foreach ($columns['data'] ?? [] as $row) {
-            $colNum = 1;
-            foreach ($row as $cell) {
-                $sheet->setCellValueByColumnAndRow($colNum, $rowNum, $cell);
-                $colNum++;
-            }
-            $rowNum++;
-        }
+    private function generateMonthlyHighlights($pesantrenId)
+    {
+        // TODO: Implement
+        return response()->json(['message' => 'Coming soon']);
+    }
 
-        $writer = new Csv($spreadsheet);
-        $filename = $filename . '_' . now()->format('Y-m-d_H-i-s') . '.csv';
+    private function generateStudentMetrics($pesantrenId)
+    {
+        // TODO: Implement
+        return response()->json(['message' => 'Coming soon']);
+    }
 
-        return response()->streamDownload(function () use ($writer) {
-            $writer->save('php://output');
-        }, $filename, [
-            'Content-Type' => 'text/csv',
-        ]);
+    private function generateAchievementSummary($pesantrenId)
+    {
+        // TODO: Implement
+        return response()->json(['message' => 'Coming soon']);
     }
 }
