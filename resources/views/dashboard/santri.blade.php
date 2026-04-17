@@ -253,10 +253,7 @@
                                 <i class="fas fa-book-open text-3xl text-gray-400"></i>
                             </div>
                             <p class="text-gray-500 mb-3">Belum ada hafalan</p>
-                            <a href="{{ route('hafalan.create') }}"
-                                class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition transform hover:-translate-y-0.5">
-                                <i class="fas fa-plus-circle mr-2"></i>Tambah Hafalan Pertama
-                            </a>
+                            <p class="text-gray-400 text-sm">Silakan minta ustadz untuk menambahkan hafalan Anda</p>
                         </div>
                     @endforelse
                 </div>
@@ -266,18 +263,7 @@
         <!-- Quick Actions -->
         <div class="bg-white rounded-xl shadow-lg p-6">
             <h3 class="text-xl font-bold text-gray-900 mb-6">Aksi Cepat</h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <a href="{{ route('hafalan.create') }}"
-                    class="flex items-center p-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all">
-                    <div class="w-14 h-14 bg-white bg-opacity-20 rounded-xl flex items-center justify-center mr-4">
-                        <i class="fas fa-plus-circle text-3xl"></i>
-                    </div>
-                    <div>
-                        <p class="font-bold text-lg">Tambah Hafalan</p>
-                        <p class="text-blue-100 text-sm">Setoran baru</p>
-                    </div>
-                </a>
-
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <a href="{{ route('hafalan.progress') }}"
                     class="flex items-center p-6 bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all">
                     <div class="w-14 h-14 bg-white bg-opacity-20 rounded-xl flex items-center justify-center mr-4">
@@ -289,8 +275,7 @@
                     </div>
                 </a>
 
-                {{-- <a href="{{ route('certificates.index') }}" --}}
-                <a href=""
+                <a href="{{ route('certificates.index') }}"
                     class="flex items-center p-6 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl hover:from-purple-600 hover:to-purple-700 shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all">
                     <div class="w-14 h-14 bg-white bg-opacity-20 rounded-xl flex items-center justify-center mr-4">
                         <i class="fas fa-certificate text-3xl"></i>
