@@ -25,6 +25,24 @@ class ClassController extends Controller
      */
     public function index(Request $request)
     {
+        // Check if requesting stats only
+        if ($request->query('stats') === '1') {
+            $pesantrenId = auth()->user()->pesantren_id;
+            
+            $stats = [
+                'total' => Classes::where('pesantren_id', $pesantrenId)->count(),
+                'active' => Classes::where('pesantren_id', $pesantrenId)
+                    ->where('status', 'active')
+                    ->count(),
+                'students' => SantriProfile::whereHas('user', function ($q) use ($pesantrenId) {
+                    $q->where('pesantren_id', $pesantrenId);
+                })->count(),
+                'teachers' => UstadzProfile::where('pesantren_id', $pesantrenId)->count(),
+            ];
+            
+            return response()->json(['stats' => $stats]);
+        }
+
         if ($request->ajax()) {
             return $this->datatable($request);
         }
@@ -60,11 +78,11 @@ class ClassController extends Controller
                 $percentage = $class->max_capacity > 0
                     ? round(($class->current_student_count / $class->max_capacity) * 100)
                     : 0;
-                $color = $percentage >= 90 ? 'red' : ($percentage >= 70 ? 'yellow' : 'green');
+                $color = $percentage >= 90 ? 'rgb(239, 68, 68)' : ($percentage >= 70 ? 'rgb(234, 179, 8)' : 'rgb(34, 197, 94)');
 
                 return "<div class='flex items-center gap-2'>
                             <div class='flex-1 bg-gray-200 rounded-full h-2 w-24'>
-                                <div class='bg-{$color}-600 h-2 rounded-full' style='width: {$percentage}%'></div>
+                                <div class='h-2 rounded-full' style='width: {$percentage}%; background-color: {$color}'></div>
                             </div>
                             <span class='text-xs text-gray-600'>{$class->current_student_count}/{$class->max_capacity}</span>
                         </div>";
