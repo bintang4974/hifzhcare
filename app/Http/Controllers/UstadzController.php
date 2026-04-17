@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\Ustadz\CreateUstadzRequest;
-use App\Http\Requests\Ustadz\UpdateUstadzRequest;
+use App\Http\Requests\User\CreateUstadzRequest;
+use App\Http\Requests\User\UpdateUstadzRequest;
 use App\Models\User;
 use App\Models\UstadzProfile;
 use App\Services\User\UserService;
@@ -201,11 +201,14 @@ class UstadzController extends Controller
     {
         $ustadz->load([
             'user',
-            'activeClasses.activeSantri',
+            'activeClassesRelation',
             'verifiedHafalans' => function ($q) {
                 $q->with(['user'])->latest()->take(10);
             }
         ]);
+
+        // Re-assign to activeClasses for compatibility
+        $ustadz->setRelation('activeClasses', $ustadz->activeClassesRelation);
 
         // Statistics
         $stats = [
@@ -230,7 +233,11 @@ class UstadzController extends Controller
     {
         $this->authorize('edit_users');
 
-        $ustadz->load(['user', 'activeClasses', 'verifiedHafalans']);
+        $ustadz->load(['user', 'activeClassesRelation', 'verifiedHafalans']);
+        
+        // Re-assign to activeClasses for view compatibility
+        $ustadz->setRelation('activeClasses', $ustadz->activeClassesRelation);
+        
         return view('users.ustadz.edit', compact('ustadz'));
     }
 
@@ -270,7 +277,7 @@ class UstadzController extends Controller
     /**
      * Remove the specified ustadz
      */
-public function destroy(UstadzProfile $ustadz)
+    public function destroy(UstadzProfile $ustadz)
     {
         try {
             $this->authorize('delete_users');
