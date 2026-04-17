@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\Wali;
+namespace App\Http\Requests\User;
 
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -19,7 +19,7 @@ class CreateWaliRequest extends FormRequest
      */
     public function rules(): array
     {
-        $pesantrenId = session('current_pesantren_id');
+        $pesantrenId = session('current_pesantren_id') ?? $this->user()->pesantren_id ?? 0;
 
         return [
             // User data

@@ -14,6 +14,41 @@
             </a>
         </div>
 
+        <!-- Error Alert -->
+        @if ($errors->any())
+            <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-circle text-red-600 text-xl"></i>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-red-800">Validasi gagal!</h3>
+                        <div class="mt-2 text-sm text-red-700">
+                            <ul class="list-disc list-inside">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        <!-- Session Error Alert -->
+        @if (session('error'))
+            <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-times-circle text-red-600 text-xl"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-red-800">{{ session('error') }}</p>
+                    </div>
+                </div>
+            </div>
+        @endif
+
         <form action="{{ route('users.wali.store') }}" method="POST" class="space-y-6">
             @csrf
 
@@ -36,16 +71,22 @@
                             Nama Lengkap <span class="text-red-500">*</span>
                         </label>
                         <input type="text" name="name" value="{{ old('name') }}" required
-                            class="w-full rounded-lg border-gray-300 focus:border-purple-500 focus:ring focus:ring-purple-200"
+                            class="w-full rounded-lg border-gray-300 focus:border-purple-500 focus:ring focus:ring-purple-200 @error('name') border-red-500 @enderror"
                             placeholder="Masukkan nama lengkap wali">
+                        @error('name')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <!-- NIK -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">NIK (Opsional)</label>
                         <input type="text" name="nik" value="{{ old('nik') }}" maxlength="16"
-                            class="w-full rounded-lg border-gray-300 focus:border-purple-500 focus:ring focus:ring-purple-200"
+                            class="w-full rounded-lg border-gray-300 focus:border-purple-500 focus:ring focus:ring-purple-200 @error('nik') border-red-500 @enderror"
                             placeholder="16 digit NIK">
+                        @error('nik')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <!-- Hubungan -->
@@ -54,20 +95,26 @@
                             Hubungan dengan Santri <span class="text-red-500">*</span>
                         </label>
                         <select name="relation" required
-                            class="w-full rounded-lg border-gray-300 focus:border-purple-500 focus:ring focus:ring-purple-200">
+                            class="w-full rounded-lg border-gray-300 focus:border-purple-500 focus:ring focus:ring-purple-200 @error('relation') border-red-500 @enderror">
                             <option value="">Pilih Hubungan</option>
-                            <option value="ayah">Ayah</option>
-                            <option value="ibu">Ibu</option>
-                            <option value="wali">Wali</option>
+                            <option value="ayah" {{ old('relation') === 'ayah' ? 'selected' : '' }}>Ayah</option>
+                            <option value="ibu" {{ old('relation') === 'ibu' ? 'selected' : '' }}>Ibu</option>
+                            <option value="wali" {{ old('relation') === 'wali' ? 'selected' : '' }}>Wali</option>
                         </select>
+                        @error('relation')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <!-- Email -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Email (Opsional)</label>
                         <input type="email" name="email" value="{{ old('email') }}"
-                            class="w-full rounded-lg border-gray-300 focus:border-purple-500 focus:ring focus:ring-purple-200"
+                            class="w-full rounded-lg border-gray-300 focus:border-purple-500 focus:ring focus:ring-purple-200 @error('email') border-red-500 @enderror"
                             placeholder="wali@example.com">
+                        @error('email')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <!-- Nomor HP -->
@@ -76,24 +123,33 @@
                             Nomor HP <span class="text-red-500">*</span>
                         </label>
                         <input type="tel" name="phone" value="{{ old('phone') }}" required
-                            class="w-full rounded-lg border-gray-300 focus:border-purple-500 focus:ring focus:ring-purple-200"
+                            class="w-full rounded-lg border-gray-300 focus:border-purple-500 focus:ring focus:ring-purple-200 @error('phone') border-red-500 @enderror"
                             placeholder="08123456789">
+                        @error('phone')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <!-- Pekerjaan -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Pekerjaan (Opsional)</label>
                         <input type="text" name="occupation" value="{{ old('occupation') }}"
-                            class="w-full rounded-lg border-gray-300 focus:border-purple-500 focus:ring focus:ring-purple-200"
+                            class="w-full rounded-lg border-gray-300 focus:border-purple-500 focus:ring focus:ring-purple-200 @error('occupation') border-red-500 @enderror"
                             placeholder="Contoh: Guru, Wiraswasta">
+                        @error('occupation')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <!-- Alamat -->
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Alamat Lengkap (Opsional)</label>
                         <textarea name="address" rows="3"
-                            class="w-full rounded-lg border-gray-300 focus:border-purple-500 focus:ring focus:ring-purple-200"
+                            class="w-full rounded-lg border-gray-300 focus:border-purple-500 focus:ring focus:ring-purple-200 @error('address') border-red-500 @enderror"
                             placeholder="Masukkan alamat lengkap">{{ old('address') }}</textarea>
+                        @error('address')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
                     </div>
                 </div>
             </div>

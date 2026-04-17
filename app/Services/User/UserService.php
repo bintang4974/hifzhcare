@@ -156,4 +156,32 @@ class UserService
             throw $e;
         }
     }
+
+    /**
+     * Create wali (guardian) with profile.
+     */
+    public function createWali(array $userData, array $profileData): User
+    {
+        DB::beginTransaction();
+
+        try {
+            // Create user and wali profile via repository
+            // Note: Repository will handle password hashing
+            $wali = $this->userRepository->createWithProfile(
+                $userData,
+                $profileData,
+                'wali'
+            );
+
+            // Assign role
+            $wali->assignRole('Wali Santri');
+
+            DB::commit();
+
+            return $wali->fresh();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
 }

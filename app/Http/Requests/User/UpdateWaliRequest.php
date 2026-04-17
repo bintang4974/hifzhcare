@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\Wali;
+namespace App\Http\Requests\User;
 
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -19,7 +19,8 @@ class UpdateWaliRequest extends FormRequest
      */
     public function rules(): array
     {
-        $waliId = $this->route('wali');
+        $waliProfile = $this->route('wali');
+        $waliId = is_object($waliProfile) ? $waliProfile->id : $waliProfile;
         $pesantrenId = session('current_pesantren_id');
 
         return [
@@ -29,13 +30,13 @@ class UpdateWaliRequest extends FormRequest
                 'nullable',
                 'email',
                 'max:255',
-                'unique:users,email,' . $this->getWaliUserId($waliId)
+                'unique:users,email,' . $this->getWaliUserId($waliProfile)
             ],
             'phone' => [
                 'required',
                 'string',
                 'max:20',
-                'unique:users,phone,' . $this->getWaliUserId($waliId) . ',id,pesantren_id,' . $pesantrenId
+                'unique:users,phone,' . $this->getWaliUserId($waliProfile) . ',id,pesantren_id,' . $pesantrenId
             ],
 
             // Wali profile data
@@ -94,9 +95,15 @@ class UpdateWaliRequest extends FormRequest
     /**
      * Get user ID from wali profile
      */
-    protected function getWaliUserId($waliId)
+    protected function getWaliUserId($waliProfile)
     {
-        $wali = \App\Models\WaliProfile::find($waliId);
+        // If it's already a model instance
+        if ($waliProfile instanceof \App\Models\WaliProfile) {
+            return $waliProfile->user_id;
+        }
+        
+        // If it's an ID, find the model
+        $wali = \App\Models\WaliProfile::find($waliProfile);
         return $wali ? $wali->user_id : null;
     }
 
