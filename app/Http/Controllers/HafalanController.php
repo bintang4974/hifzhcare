@@ -31,12 +31,23 @@ class HafalanController extends Controller
         $query = Classes::where('status', 'active')->orderBy('name');
 
         // If user is ustadz, limit to classes they teach
+        // If user is santri, limit to classes they're enrolled in
         $user = auth()->user();
         if ($user && method_exists($user, 'isUstadz') && $user->isUstadz()) {
             $ustadzProfileId = $user->ustadzProfile?->id;
             if ($ustadzProfileId) {
                 $query->whereHas('activeUstadz', function ($q) use ($ustadzProfileId) {
                     $q->where('ustadz_profile_id', $ustadzProfileId);
+                });
+            } else {
+                // No profile found — return empty
+                $query->whereRaw('0 = 1');
+            }
+        } elseif ($user && method_exists($user, 'isSantri') && $user->isSantri()) {
+            $santriProfileId = $user->santriProfile?->id;
+            if ($santriProfileId) {
+                $query->whereHas('activeSantri', function ($q) use ($santriProfileId) {
+                    $q->where('santri_profile_id', $santriProfileId);
                 });
             } else {
                 // No profile found — return empty
@@ -71,6 +82,9 @@ class HafalanController extends Controller
                 // No profile found — return empty
                 $query->whereRaw('0 = 1');
             }
+        } elseif ($user && method_exists($user, 'isSantri') && $user->isSantri()) {
+            // If user is santri, limit to their own hafalans only
+            $query->where('user_id', $user->id);
         }
 
         // Apply filters
