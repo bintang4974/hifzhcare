@@ -178,13 +178,37 @@ class ClassController extends Controller
             'pending_hafalan' => $class->hafalans->where('status', 'pending')->count(),
         ];
 
-        // If current user is an ustadz, only allow access if they teach this class
+        // Authorization check
         $user = auth()->user();
-        if ($user && method_exists($user, 'isUstadz') && $user->isUstadz()) {
+        if (!$user) {
+            abort(401, 'Unauthorized access.');
+        }
+
+        // Check if user can access this class
+        $canAccess = false;
+
+        // Admins with manage_classes permission can see all classes
+        if ($user->can('manage_classes')) {
+            $canAccess = true;
+        }
+        // Ustadz can see classes they teach
+        elseif ($user->isUstadz()) {
             $ustadzId = $user->ustadzProfile?->id;
-            if (! $class->activeUstadz->contains('id', $ustadzId)) {
-                abort(403, 'This action is unauthorized.');
+            if ($ustadzId && $class->activeUstadz->contains('id', $ustadzId)) {
+                $canAccess = true;
             }
+        }
+        // Santri can see their enrolled classes
+        elseif ($user->isSantri()) {
+            $santriId = $user->santriProfile?->id;
+            if ($santriId && $class->activeSantri->contains('id', $santriId)) {
+                $canAccess = true;
+            }
+        }
+
+        // If no access granted, abort
+        if (!$canAccess) {
+            abort(403, 'Anda tidak memiliki akses ke kelas ini.');
         }
 
         return view('classes.show', compact('class', 'stats'));

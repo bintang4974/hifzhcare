@@ -28,10 +28,23 @@ class HafalanController extends Controller
         }
 
         // Get filter options
-        $classes = Classes::where('status', 'active')
-            ->orderBy('name')
-            ->get(['id', 'name']);
+        $query = Classes::where('status', 'active')->orderBy('name');
 
+        // If user is ustadz, limit to classes they teach
+        $user = auth()->user();
+        if ($user && method_exists($user, 'isUstadz') && $user->isUstadz()) {
+            $ustadzProfileId = $user->ustadzProfile?->id;
+            if ($ustadzProfileId) {
+                $query->whereHas('activeUstadz', function ($q) use ($ustadzProfileId) {
+                    $q->where('ustadz_profile_id', $ustadzProfileId);
+                });
+            } else {
+                // No profile found — return empty
+                $query->whereRaw('0 = 1');
+            }
+        }
+
+        $classes = $query->get(['id', 'name']);
         $surahs = QuranHelper::getAllSurahs();
 
         return view('hafalan.index', compact('classes', 'surahs'));

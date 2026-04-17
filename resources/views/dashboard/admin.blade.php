@@ -117,7 +117,7 @@
         <!-- Charts & Activity -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Monthly Progress Chart -->
-            {{-- <div class="lg:col-span-2 bg-white rounded-xl shadow-md p-6">
+            <div class="lg:col-span-2 bg-white rounded-xl shadow-md p-6">
                 <div class="flex items-center justify-between mb-6">
                     <h3 class="text-lg font-bold text-gray-900">Progress Bulanan</h3>
                     <select class="text-sm border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
@@ -126,15 +126,16 @@
                         <option>3 Bulan Terakhir</option>
                     </select>
                 </div>
-                <canvas id="monthlyChart" height="100"></canvas>
-            </div> --}}
+                <div style="position: relative; height: 300px; width: 100%;">
+                    <canvas id="monthlyChart"></canvas>
+                </div>
+            </div>
 
             <!-- Quick Actions -->
             <div class="bg-white rounded-xl shadow-md p-6">
                 <h3 class="text-lg font-bold text-gray-900 mb-6">Aksi Cepat</h3>
                 <div class="space-y-3">
-                    <a href="{{ route('users.santri.create') }}"
-                    {{-- <a href="" --}}
+                    <a href="{{ route('users.santri.create') }}" {{-- <a href="" --}}
                         class="flex items-center p-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 shadow-md hover:shadow-lg transform hover:-translate-y-1 transition-all">
                         <div class="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-3">
                             <i class="fas fa-user-plus"></i>
@@ -167,8 +168,7 @@
                         </div>
                     </a>
 
-                    <a href="{{ route('reports.index') }}"
-                    {{-- <a href="" --}}
+                    <a href="{{ route('reports.index') }}" {{-- <a href="" --}}
                         class="flex items-center p-4 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:from-purple-600 hover:to-purple-700 shadow-md hover:shadow-lg transform hover:-translate-y-1 transition-all">
                         <div class="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-3">
                             <i class="fas fa-chart-bar"></i>
@@ -241,8 +241,7 @@
                 <div class="flex items-center justify-between mb-6">
                     <h3 class="text-lg font-bold text-gray-900">Sertifikat Pending</h3>
                     {{-- <a href="{{ route('certificates.index') }}?status=pending" --}}
-                    <a href="?status=pending"
-                        class="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                    <a href="?status=pending" class="text-sm text-blue-600 hover:text-blue-700 font-medium">
                         Lihat Semua <i class="fas fa-arrow-right ml-1"></i>
                     </a>
                 </div>
