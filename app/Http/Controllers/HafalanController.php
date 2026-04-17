@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Hafalan\{CreateHafalanRequest, UpdateHafalanRequest};
-use App\Models\{Classes, Hafalan, User};
+use App\Models\{Certificate, Classes, Hafalan, HafalanAudio, SantriProfile, User};
 use App\Services\Hafalan\HafalanService;
 use App\Support\Helpers\QuranHelper;
 use Illuminate\Http\Request;
@@ -28,10 +28,34 @@ class HafalanController extends Controller
         }
 
         // Get filter options
-        $classes = Classes::where('status', 'active')
-            ->orderBy('name')
-            ->get(['id', 'name']);
+        $query = Classes::where('status', 'active')->orderBy('name');
 
+        // If user is ustadz, limit to classes they teach
+        // If user is santri, limit to classes they're enrolled in
+        $user = auth()->user();
+        if ($user && method_exists($user, 'isUstadz') && $user->isUstadz()) {
+            $ustadzProfileId = $user->ustadzProfile?->id;
+            if ($ustadzProfileId) {
+                $query->whereHas('activeUstadz', function ($q) use ($ustadzProfileId) {
+                    $q->where('ustadz_profile_id', $ustadzProfileId);
+                });
+            } else {
+                // No profile found — return empty
+                $query->whereRaw('0 = 1');
+            }
+        } elseif ($user && method_exists($user, 'isSantri') && $user->isSantri()) {
+            $santriProfileId = $user->santriProfile?->id;
+            if ($santriProfileId) {
+                $query->whereHas('activeSantri', function ($q) use ($santriProfileId) {
+                    $q->where('santri_profile_id', $santriProfileId);
+                });
+            } else {
+                // No profile found — return empty
+                $query->whereRaw('0 = 1');
+            }
+        }
+
+        $classes = $query->get(['id', 'name']);
         $surahs = QuranHelper::getAllSurahs();
 
         return view('hafalan.index', compact('classes', 'surahs'));
@@ -58,6 +82,9 @@ class HafalanController extends Controller
                 // No profile found — return empty
                 $query->whereRaw('0 = 1');
             }
+        } elseif ($user && method_exists($user, 'isSantri') && $user->isSantri()) {
+            // If user is santri, limit to their own hafalans only
+            $query->where('user_id', $user->id);
         }
 
         // Apply filters
@@ -178,6 +205,11 @@ class HafalanController extends Controller
     public function create()
     {
         $user = auth()->user();
+
+        // Only ustadz and admin can create hafalan entries
+        if ($user->isSantri()) {
+            abort(403, 'Santri tidak memiliki akses untuk menambahkan hafalan. Silakan minta ustadz untuk menambahkan hafalan Anda.');
+        }
 
         // Get users based on role
         if ($user->isUstadz()) {
@@ -363,16 +395,281 @@ class HafalanController extends Controller
     /**
      * Get progress by user.
      */
-    public function progress(Request $request)
+    public function progress($userId = null)
     {
-        $userId = $request->user_id ?? auth()->id();
-
-        $progress = $this->hafalanService->getProgress($userId);
-
-        if ($request->ajax()) {
-            return response()->json($progress);
+        // Determine which santri to show
+        if (auth()->user()->user_type === 'santri') {
+            $santri = auth()->user()->santriProfile;
+        } elseif (auth()->user()->user_type === 'wali') {
+            // Get santri from wali's children
+            $santri = auth()->user()->waliProfile->santriProfiles()->first();
+        } else {
+            // Admin/Ustadz viewing specific santri
+            $santri = SantriProfile::findOrFail($userId);
         }
 
-        return view('hafalan.progress', compact('progress'));
+        if (!$santri) {
+            abort(404, 'Data santri tidak ditemukan');
+        }
+
+        $userId = $santri->user_id;
+
+        // Statistics
+        $stats = [
+            'progress_percentage' => $santri->progress_percentage ?? 0,
+            'completed_juz' => Certificate::where('user_id', $userId)
+                ->where('type', 'per_juz')
+                ->count(),
+            'total_verified' => Hafalan::where('user_id', $userId)
+                ->whereHas('audios', function ($q) {
+                    $q->where('status', 'verified');
+                })
+                ->count(),
+            'certificates' => Certificate::where('user_id', $userId)->count(),
+            'current_streak' => $this->calculateStreak($userId),
+            'avg_per_day' => $this->calculateAvgPerDay($userId),
+            'total_hours' => $this->calculateTotalHours($userId),
+            'consistency' => $this->calculateConsistency($userId),
+        ];
+
+        // 30 Juz Progress
+        $juzProgress = $this->getJuzProgress($userId);
+
+        // Calendar data (current month)
+        $calendar = $this->getMonthlyCalendar($userId);
+
+        // Recent achievements
+        $recentAchievements = $this->getRecentAchievements($userId);
+
+        return view('hafalan.progress', compact(
+            'santri',
+            'stats',
+            'juzProgress',
+            'calendar',
+            'recentAchievements'
+        ));
+    }
+
+    /**
+     * Get progress for all 30 Juz
+     */
+    private function getJuzProgress($santriId)
+    {
+        $juzData = [
+            1 => ['surah_range' => 'Al-Fatihah - Al-Baqarah 141', 'ayat' => 148],
+            2 => ['surah_range' => 'Al-Baqarah 142-252', 'ayat' => 111],
+            3 => ['surah_range' => 'Al-Baqarah 253 - Ali Imran 92', 'ayat' => 126],
+            4 => ['surah_range' => 'Ali Imran 93 - An-Nisa 23', 'ayat' => 132],
+            5 => ['surah_range' => 'An-Nisa 24-147', 'ayat' => 124],
+            6 => ['surah_range' => 'An-Nisa 148 - Al-Maidah 81', 'ayat' => 111],
+            7 => ['surah_range' => 'Al-Maidah 82 - Al-An\'am 110', 'ayat' => 149],
+            8 => ['surah_range' => 'Al-An\'am 111 - Al-A\'raf 87', 'ayat' => 142],
+            9 => ['surah_range' => 'Al-A\'raf 88 - Al-Anfal 40', 'ayat' => 159],
+            10 => ['surah_range' => 'Al-Anfal 41 - At-Taubah 92', 'ayat' => 127],
+            11 => ['surah_range' => 'At-Taubah 93 - Hud 5', 'ayat' => 151],
+            12 => ['surah_range' => 'Hud 6 - Yusuf 52', 'ayat' => 134],
+            13 => ['surah_range' => 'Yusuf 53 - Ibrahim 52', 'ayat' => 146],
+            14 => ['surah_range' => 'Al-Hijr 1 - An-Nahl 128', 'ayat' => 227],
+            15 => ['surah_range' => 'Al-Isra 1 - Al-Kahf 74', 'ayat' => 185],
+            16 => ['surah_range' => 'Al-Kahf 75 - Ta-Ha 135', 'ayat' => 171],
+            17 => ['surah_range' => 'Al-Anbiya 1 - Al-Hajj 78', 'ayat' => 190],
+            18 => ['surah_range' => 'Al-Mu\'minun 1 - Al-Furqan 20', 'ayat' => 201],
+            19 => ['surah_range' => 'Al-Furqan 21 - An-Naml 55', 'ayat' => 186],
+            20 => ['surah_range' => 'An-Naml 56 - Al-Ankabut 45', 'ayat' => 190],
+            21 => ['surah_range' => 'Al-Ankabut 46 - Al-Ahzab 30', 'ayat' => 170],
+            22 => ['surah_range' => 'Al-Ahzab 31 - Ya-Sin 27', 'ayat' => 168],
+            23 => ['surah_range' => 'Ya-Sin 28 - Az-Zumar 31', 'ayat' => 178],
+            24 => ['surah_range' => 'Az-Zumar 32 - Fussilat 46', 'ayat' => 173],
+            25 => ['surah_range' => 'Fussilat 47 - Al-Jasiyah 37', 'ayat' => 177],
+            26 => ['surah_range' => 'Al-Ahqaf 1 - Adh-Dhariyat 30', 'ayat' => 195],
+            27 => ['surah_range' => 'Adh-Dhariyat 31 - Al-Hadid 29', 'ayat' => 161],
+            28 => ['surah_range' => 'Al-Mujadilah 1 - At-Tahrim 12', 'ayat' => 184],
+            29 => ['surah_range' => 'Al-Mulk 1 - Al-Mursalat 50', 'ayat' => 231],
+            30 => ['surah_range' => 'An-Naba 1 - An-Nas 6', 'ayat' => 564],
+        ];
+
+        $progress = [];
+
+        foreach ($juzData as $juzNumber => $data) {
+            // Check if completed (has certificate)
+            $certificate = Certificate::where('user_id', $santriId)
+                ->where('type', 'per_juz')
+                ->where('juz_completed', $juzNumber)
+                ->first();
+
+            // Count verified hafalan in this juz
+            $verified = Hafalan::where('user_id', $santriId)
+                ->where('juz_number', $juzNumber)
+                ->whereHas('audios', function ($q) {
+                    $q->where('status', 'verified');
+                })
+                ->count();
+
+            // Calculate progress
+            $progressPercentage = $certificate ? 100 : min(($verified / $data['ayat']) * 100, 99);
+
+            // Determine status
+            $status = 'pending';
+            if ($certificate) {
+                $status = 'completed';
+            } elseif ($progressPercentage > 0) {
+                $status = 'in_progress';
+            }
+
+            $progress[] = [
+                'number' => $juzNumber,
+                'surah_range' => $data['surah_range'],
+                'ayat_count' => $data['ayat'],
+                'verified' => $verified,
+                'progress' => round($progressPercentage, 0),
+                'status' => $status,
+                'certificate_date' => $certificate ? ($certificate->issued_at ? $certificate->issued_at->format('d M Y') : null) : null,
+            ];
+        }
+
+        return $progress;
+    }
+
+    /**
+     * Get monthly calendar with activity
+     */
+    private function getMonthlyCalendar($santriId)
+    {
+        $calendar = [];
+        $now = now();
+        $daysInMonth = $now->daysInMonth;
+        $firstDayOfWeek = $now->copy()->startOfMonth()->dayOfWeek;
+
+        // Fill empty days at start
+        for ($i = 0; $i < $firstDayOfWeek; $i++) {
+            $calendar[] = ['day' => '', 'has_activity' => false, 'is_today' => false];
+        }
+
+        // Get activity dates
+        $activityDates = Hafalan::where('user_id', $santriId)
+            ->whereMonth('hafalan_date', $now->month)
+            ->whereYear('hafalan_date', $now->year)
+            ->pluck('hafalan_date')
+            ->map(function ($date) {
+                return $date->format('Y-m-d');
+            })
+            ->unique()
+            ->toArray();
+
+        // Fill actual days
+        for ($day = 1; $day <= $daysInMonth; $day++) {
+            $dateString = $now->copy()->setDay($day)->format('Y-m-d');
+
+            $calendar[] = [
+                'day' => $day,
+                'has_activity' => in_array($dateString, $activityDates),
+                'is_today' => $day == $now->day,
+            ];
+        }
+
+        return $calendar;
+    }
+
+    /**
+     * Calculate current streak
+     */
+    private function calculateStreak($santriId)
+    {
+        $streak = 0;
+        $currentDate = now();
+
+        while (true) {
+            $hasActivity = Hafalan::where('user_id', $santriId)
+                ->whereDate('hafalan_date', $currentDate->format('Y-m-d'))
+                ->exists();
+
+            if (!$hasActivity) {
+                break;
+            }
+
+            $streak++;
+            $currentDate->subDay();
+
+            if ($streak > 365) break; // Max 1 year
+        }
+
+        return $streak;
+    }
+
+    /**
+     * Calculate average per day
+     */
+    private function calculateAvgPerDay($santriId)
+    {
+        $totalVerified = Hafalan::where('user_id', $santriId)
+            ->whereHas('audios', function ($q) {
+                $q->where('status', 'verified');
+            })
+            ->count();
+
+        $firstHafalan = Hafalan::where('user_id', $santriId)
+            ->oldest('hafalan_date')
+            ->first();
+
+        if (!$firstHafalan || !$firstHafalan->hafalan_date) return 0;
+
+        $days = max($firstHafalan->hafalan_date->diffInDays(now()), 1);
+
+        return round($totalVerified / $days, 1);
+    }
+
+    /**
+     * Calculate total hours
+     */
+    private function calculateTotalHours($santriId)
+    {
+        // Assume average 5 minutes per hafalan
+        $totalHafalan = Hafalan::where('user_id', $santriId)
+            ->whereHas('audios', function ($q) {
+                $q->where('status', 'verified');
+            })
+            ->count();
+
+        return round(($totalHafalan * 5) / 60, 1);
+    }
+
+    /**
+     * Calculate consistency percentage
+     */
+    private function calculateConsistency($santriId)
+    {
+        $totalDays = 30; // Last 30 days
+        $activeDays = Hafalan::where('user_id', $santriId)
+            ->where('hafalan_date', '>=', now()->subDays(30))
+            ->selectRaw('DATE(hafalan_date) as date')
+            ->groupBy('date')
+            ->get()
+            ->count();
+
+        return round(($activeDays / $totalDays) * 100, 0);
+    }
+
+    /**
+     * Get recent achievements
+     */
+    private function getRecentAchievements($santriId)
+    {
+        $achievements = [];
+
+        // Recent certificates
+        $certificates = Certificate::where('user_id', $santriId)
+            ->orderByDesc('issued_at')
+            ->limit(3)
+            ->get();
+
+        foreach ($certificates as $cert) {
+            $achievements[] = [
+                'icon' => 'certificate',
+                'title' => $cert->type === 'khatam' ? 'Khatam 30 Juz!' : 'Selesai Juz ' . $cert->juz_completed,
+                'date' => $cert->issued_at ? $cert->issued_at->diffForHumans() : 'Tanggal tidak tersedia',
+            ];
+        }
+
+        return $achievements;
     }
 }

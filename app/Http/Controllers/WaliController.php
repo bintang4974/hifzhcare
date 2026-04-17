@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\Wali\CreateWaliRequest;
-use App\Http\Requests\Wali\UpdateWaliRequest;
+use App\Http\Requests\User\CreateWaliRequest;
+use App\Http\Requests\User\UpdateWaliRequest;
 use App\Models\User;
 use App\Models\WaliProfile;
 use App\Repositories\Contracts\UserRepositoryInterface;
@@ -156,6 +156,8 @@ class WaliController extends Controller
     public function store(CreateWaliRequest $request)
     {
         try {
+            $pesantrenId = session('current_pesantren_id') ?? $request->user()->pesantren_id;
+            
             $userData = [
                 'name' => $request->name,
                 'email' => $request->email,
@@ -163,7 +165,7 @@ class WaliController extends Controller
                 'password' => $request->password ?: Str::random(8),
                 'user_type' => 'wali',
                 'status' => 'active',
-                'pesantren_id' => session('current_pesantren_id'),
+                'pesantren_id' => $pesantrenId,
             ];
 
             $profileData = [
@@ -171,7 +173,7 @@ class WaliController extends Controller
                 'relation' => $request->relation,
                 'occupation' => $request->occupation,
                 'address' => $request->address,
-                'pesantren_id' => session('current_pesantren_id'),
+                'pesantren_id' => $pesantrenId,
             ];
 
             $user = $this->userService->createWali($userData, $profileData);

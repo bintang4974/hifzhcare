@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\Ustadz;
+namespace App\Http\Requests\User;
 
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -19,7 +19,8 @@ class UpdateUstadzRequest extends FormRequest
      */
     public function rules(): array
     {
-        $ustadzId = $this->route('ustadz');
+        $ustadzProfile = $this->route('ustadz');
+        $ustadzId = is_object($ustadzProfile) ? $ustadzProfile->id : $ustadzProfile;
         $pesantrenId = session('current_pesantren_id');
 
         return [
@@ -29,13 +30,13 @@ class UpdateUstadzRequest extends FormRequest
                 'nullable',
                 'email',
                 'max:255',
-                'unique:users,email,' . $this->getUstadzUserId($ustadzId)
+                'unique:users,email,' . $this->getUstadzUserId($ustadzProfile)
             ],
             'phone' => [
                 'required',
                 'string',
                 'max:20',
-                'unique:users,phone,' . $this->getUstadzUserId($ustadzId) . ',id,pesantren_id,' . $pesantrenId
+                'unique:users,phone,' . $this->getUstadzUserId($ustadzProfile) . ',id,pesantren_id,' . $pesantrenId
             ],
 
             // Ustadz profile data
@@ -94,9 +95,15 @@ class UpdateUstadzRequest extends FormRequest
     /**
      * Get user ID from ustadz profile
      */
-    protected function getUstadzUserId($ustadzId)
+    protected function getUstadzUserId($ustadzProfile)
     {
-        $ustadz = \App\Models\UstadzProfile::find($ustadzId);
+        // If it's already a model instance
+        if ($ustadzProfile instanceof \App\Models\UstadzProfile) {
+            return $ustadzProfile->user_id;
+        }
+        
+        // If it's an ID, find the model
+        $ustadz = \App\Models\UstadzProfile::find($ustadzProfile);
         return $ustadz ? $ustadz->user_id : null;
     }
 }

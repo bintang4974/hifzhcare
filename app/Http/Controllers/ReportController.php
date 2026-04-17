@@ -164,9 +164,15 @@ class ReportController extends Controller
 
         $santris = $query->orderByDesc('total_juz_completed')->get();
 
-        // Add monthly progress data
+        // Add monthly progress data and calculate progress percentage
         foreach ($santris as $santri) {
             $santri->monthly_progress = $this->getMonthlyProgress($santri->id);
+            // Calculate progress percentage (total_juz_completed / 30 * 100)
+            $santri->progress_percentage = ($santri->total_juz_completed ?? 0) / 30 * 100;
+            // Get class name
+            $santri->class_name = $santri->classes()->first()?->name ?? '-';
+            // Count certificates
+            $santri->certificates_count = Certificate::where('user_id', $santri->user_id)->count();
         }
 
         if ($validated['format'] === 'pdf') {

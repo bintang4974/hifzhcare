@@ -128,4 +128,60 @@ class UserService
             'password' => Hash::make($newPassword)
         ]);
     }
+
+    /**
+     * Create ustadz (teacher) with profile.
+     */
+    public function createUstadz(array $userData, array $profileData): User
+    {
+        DB::beginTransaction();
+
+        try {
+            // Create user and ustadz profile via repository
+            // Note: Repository will handle password hashing
+            $ustadz = $this->userRepository->createWithProfile(
+                $userData,
+                $profileData,
+                'ustadz'
+            );
+
+            // Assign role
+            $ustadz->assignRole('Ustadz');
+
+            DB::commit();
+
+            return $ustadz->fresh();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
+
+    /**
+     * Create wali (guardian) with profile.
+     */
+    public function createWali(array $userData, array $profileData): User
+    {
+        DB::beginTransaction();
+
+        try {
+            // Create user and wali profile via repository
+            // Note: Repository will handle password hashing
+            $wali = $this->userRepository->createWithProfile(
+                $userData,
+                $profileData,
+                'wali'
+            );
+
+            // Assign role
+            $wali->assignRole('Wali Santri');
+
+            DB::commit();
+
+            return $wali->fresh();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
 }

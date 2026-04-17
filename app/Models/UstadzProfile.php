@@ -20,6 +20,7 @@ class UstadzProfile extends Model
         'pesantren_id',
         'nip',
         'specialization',
+        'address',
         'join_date',
         'total_appreciation_received',
     ];
@@ -48,9 +49,24 @@ class UstadzProfile extends Model
             ->withTimestamps();
     }
 
+    /**
+     * Get active classes only
+     */
     public function activeClasses(): BelongsToMany
     {
         return $this->classes()->wherePivot('status', 'active');
+    }
+
+    /**
+     * Relationship for eager loading
+     * Use this for eager loading instead of activeClasses method
+     */
+    public function activeClassesRelation(): BelongsToMany
+    {
+        return $this->belongsToMany(Classes::class, 'class_ustadz', 'ustadz_profile_id', 'class_id')
+            ->wherePivot('status', 'active')
+            ->withPivot(['assigned_date', 'status'])
+            ->withTimestamps();
     }
 
     public function verifiedHafalans(): HasMany

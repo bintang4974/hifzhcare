@@ -231,44 +231,91 @@
         let recordingSeconds = 0;
         let audioBlob;
 
-        // Calculate Ayat Count
+        // Calculate Ayat Count - outside ready for global access
         function updateAyatCount() {
-            const start = parseInt($('#ayat-start').val()) || 0;
-            const end = parseInt($('#ayat-end').val()) || 0;
+            const startInput = document.getElementById('ayat-start');
+            const endInput = document.getElementById('ayat-end');
+            const countDisplay = document.getElementById('ayat-count');
+            
+            if (!startInput || !endInput || !countDisplay) {
+                console.error('Elements not found', {startInput, endInput, countDisplay});
+                return;
+            }
+            
+            const start = parseInt(startInput.value) || 1;
+            const end = parseInt(endInput.value) || 1;
             const count = Math.max(0, end - start + 1);
-            $('#ayat-count').text(count);
+            
+            console.log('updateAyatCount:', { start, end, count });
+            countDisplay.textContent = count;
         }
 
-        // Update max ayat based on surah
-        $('#surah-select').on('change', function() {
-            const maxAyat = $(this).find(':selected').data('max-ayat');
-            if (maxAyat) {
-                $('#ayat-start').attr('max', maxAyat);
-                $('#ayat-end').attr('max', maxAyat);
+        $(document).ready(function() {
+            console.log('Document ready - initializing form');
+
+            // Update max ayat based on surah
+            $('#surah-select').on('change', function() {
+                const maxAyat = $(this).find(':selected').data('max-ayat');
+                console.log('Surah changed, max ayat:', maxAyat);
+                if (maxAyat) {
+                    $('#ayat-start').attr('max', maxAyat);
+                    $('#ayat-end').attr('max', maxAyat);
+                }
+                updateAyatCount();
+            });
+
+            // Bind multiple events for ayat inputs
+            const ayatInputs = document.getElementById('ayat-start');
+            if (ayatInputs) {
+                ayatInputs.addEventListener('input', updateAyatCount);
+                ayatInputs.addEventListener('change', updateAyatCount);
+                ayatInputs.addEventListener('keyup', updateAyatCount);
             }
+            
+            const ayatEndInput = document.getElementById('ayat-end');
+            if (ayatEndInput) {
+                ayatEndInput.addEventListener('input', updateAyatCount);
+                ayatEndInput.addEventListener('change', updateAyatCount);
+                ayatEndInput.addEventListener('keyup', updateAyatCount);
+            }
+
+            // Initialize on page load
             updateAyatCount();
-        });
 
-        $('#ayat-start, #ayat-end').on('input', updateAyatCount);
+            // Audio Upload Handler
+            $('#audio-upload').on('change', function() {
+                const file = this.files[0];
+                if (file) {
+                    $('#upload-filename').text('File: ' + file.name);
+                    // Hide recording section if file uploaded
+                    $('#record-section').hide();
+                    $('#audio-player-section').hide();
+                }
+            });
 
-        // Audio Upload Handler
-        $('#audio-upload').on('change', function() {
-            const file = this.files[0];
-            if (file) {
-                $('#upload-filename').text('File: ' + file.name);
-                // Hide recording section if file uploaded
-                $('#record-section').hide();
-                $('#audio-player-section').hide();
-            }
-        });
+            // Audio Recording
+            $('#btn-record').on('click', async function() {
+                if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+                    await startRecording();
+                } else {
+                    stopRecording();
+                }
+            });
 
-        // Audio Recording
-        $('#btn-record').on('click', async function() {
-            if (!mediaRecorder || mediaRecorder.state === 'inactive') {
-                await startRecording();
-            } else {
-                stopRecording();
-            }
+            // Re-record
+            $('#btn-rerecord').on('click', async function() {
+                $('#audio-player-section').addClass('hidden');
+                $('#record-section').removeClass('hidden');
+                document.getElementById('audio-upload').value = '';
+            });
+
+            // Remove audio
+            $('#btn-remove-audio').on('click', function() {
+                $('#audio-player-section').addClass('hidden');
+                $('#record-section').removeClass('hidden');
+                document.getElementById('audio-upload').value = '';
+                $('#upload-filename').text('');
+            });
         });
 
         async function startRecording() {
@@ -327,25 +374,5 @@
                 clearInterval(recordingInterval);
             }
         }
-
-        // Re-record
-        $('#btn-rerecord').on('click', async function() {
-            $('#audio-player-section').addClass('hidden');
-            $('#record-section').removeClass('hidden');
-            document.getElementById('audio-upload').value = '';
-        });
-
-        // Remove audio
-        $('#btn-remove-audio').on('click', function() {
-            $('#audio-player-section').addClass('hidden');
-            $('#record-section').removeClass('hidden');
-            document.getElementById('audio-upload').value = '';
-            $('#upload-filename').text('');
-        });
-
-        // Initialize
-        $(document).ready(function() {
-            updateAyatCount();
-        });
     </script>
 @endpush

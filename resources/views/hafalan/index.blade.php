@@ -3,340 +3,1113 @@
 @section('title', 'Daftar Hafalan')
 
 @section('content')
-    <div class="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
-        <!-- Header -->
-        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
-            <div class="min-w-0">
-                <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">Daftar Hafalan</h1>
-                <p class="text-sm sm:text-base text-gray-600 mt-1">Kelola dan monitor hafalan santri</p>
-            </div>
+    <div class="hafalan-page">
 
+        {{-- Page Header --}}
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">Daftar Hafalan</h1>
+                <p class="page-subtitle">Kelola dan monitor hafalan santri</p>
+            </div>
             @can('create_hafalan')
-                <a href="{{ route('hafalan.create') }}"
-                    class="inline-flex items-center justify-center px-4 sm:px-6 py-2.5 sm:py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm sm:text-base font-semibold rounded-lg shadow-md hover:shadow-lg transition flex-shrink-0 whitespace-nowrap">
-                    <i class="fas fa-plus mr-2"></i>Tambah Hafalan
+                <a href="{{ route('hafalan.create') }}" class="btn-primary">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path d="M12 5v14M5 12h14" />
+                    </svg>
+                    Tambah Hafalan
                 </a>
             @endcan
         </div>
 
-        <!-- Filters -->
-        <div class="bg-white rounded-lg sm:rounded-lg shadow-md p-3 sm:p-6 mb-4 sm:mb-6">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
-                <!-- Status Filter -->
-                <div>
-                    <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Status</label>
-                    <select id="filter-status"
-                        class="w-full text-sm rounded-lg border border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 py-1.5 sm:py-2 px-2 sm:px-3">
+        {{-- Filter Card --}}
+        <div class="card filter-card">
+            <div class="filter-grid">
+                <div class="filter-group">
+                    <label class="filter-label">Status</label>
+                    <select id="filter-status" class="filter-input">
                         <option value="">Semua Status</option>
                         <option value="pending">Pending</option>
                         <option value="verified">Verified</option>
                         <option value="rejected">Rejected</option>
                     </select>
                 </div>
-
-                <!-- Type Filter -->
-                <div>
-                    <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Jenis</label>
-                    <select id="filter-type"
-                        class="w-full text-sm rounded-lg border border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 py-1.5 sm:py-2 px-2 sm:px-3">
+                <div class="filter-group">
+                    <label class="filter-label">Jenis</label>
+                    <select id="filter-type" class="filter-input">
                         <option value="">Semua Jenis</option>
                         <option value="setoran">Setoran</option>
                         <option value="murajah">Muraja'ah</option>
                     </select>
                 </div>
-
-                <!-- Class Filter -->
-                <div>
-                    <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Kelas</label>
-                    <select id="filter-class"
-                        class="w-full text-sm rounded-lg border border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 py-1.5 sm:py-2 px-2 sm:px-3">
+                <div class="filter-group">
+                    <label class="filter-label">Kelas</label>
+                    <select id="filter-class" class="filter-input">
                         <option value="">Semua Kelas</option>
                         @foreach ($classes as $class)
                             <option value="{{ $class->id }}">{{ $class->name }}</option>
                         @endforeach
                     </select>
                 </div>
-
-                <!-- Juz Filter -->
-                <div>
-                    <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Juz</label>
-                    <select id="filter-juz"
-                        class="w-full text-sm rounded-lg border border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 py-1.5 sm:py-2 px-2 sm:px-3">
+                <div class="filter-group">
+                    <label class="filter-label">Juz</label>
+                    <select id="filter-juz" class="filter-input">
                         <option value="">Semua Juz</option>
                         @for ($i = 1; $i <= 30; $i++)
                             <option value="{{ $i }}">Juz {{ $i }}</option>
                         @endfor
                     </select>
                 </div>
-
-                <!-- Date From -->
-                <div>
-                    <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Dari Tanggal</label>
-                    <input type="date" id="filter-date-from"
-                        class="w-full text-sm rounded-lg border border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 py-1.5 sm:py-2 px-2 sm:px-3">
+                <div class="filter-group">
+                    <label class="filter-label">Dari Tanggal</label>
+                    <input type="date" id="filter-date-from" class="filter-input">
                 </div>
-
-                <!-- Date To -->
-                <div>
-                    <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Sampai Tanggal</label>
-                    <input type="date" id="filter-date-to"
-                        class="w-full text-sm rounded-lg border border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 py-1.5 sm:py-2 px-2 sm:px-3">
+                <div class="filter-group">
+                    <label class="filter-label">Sampai Tanggal</label>
+                    <input type="date" id="filter-date-to" class="filter-input">
                 </div>
-
-                <!-- Filter Actions -->
-                <div class="col-span-1 sm:col-span-2 lg:col-span-4 flex flex-col sm:flex-row items-stretch gap-2">
-                    <button onclick="applyFilters()"
-                        class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm py-2 rounded-lg transition">
-                        <i class="fas fa-filter mr-2"></i>Filter
-                    </button>
-                    <button onclick="resetFilters()"
-                        class="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-semibold text-sm py-2 rounded-lg transition">
-                        <i class="fas fa-redo mr-2"></i>Reset
-                    </button>
-                </div>
+            </div>
+            <div class="filter-actions">
+                <button onclick="applyFilters()" class="btn-filter btn-apply">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"
+                        viewBox="0 0 24 24">
+                        <path d="M3 4h18l-7 8v5l-4 2V12z" />
+                    </svg>
+                    Filter
+                </button>
+                <button onclick="resetFilters()" class="btn-filter btn-reset">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"
+                        viewBox="0 0 24 24">
+                        <path d="M4 4v6h6M20 20v-6h-6" />
+                        <path d="M4 10a8 8 0 0115.5-2.5M20 14a8 8 0 01-15.5 2.5" />
+                    </svg>
+                    Reset
+                </button>
             </div>
         </div>
 
-        <!-- DataTable Container - Card Based -->
-        <div class="bg-white rounded-lg sm:rounded-xl shadow-md overflow-hidden">
-            <div class="px-3 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
-                <h3 class="text-base sm:text-lg font-bold text-gray-900">Daftar Hafalan</h3>
+        {{-- Table Card --}}
+        <div class="card table-card">
+            <div class="table-header">
+                <h3 class="table-title">Daftar Hafalan</h3>
+                <div class="table-search">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
+                        viewBox="0 0 24 24" class="search-icon">
+                        <circle cx="11" cy="11" r="8" />
+                        <path d="M21 21l-4.35-4.35" />
+                    </svg>
+                    <input type="text" id="hafalan-search" placeholder="Cari santri, surah..." class="search-input">
+                </div>
             </div>
 
-            <div class="overflow-x-auto">
-                <table id="hafalan-table" class="min-w-full divide-y divide-gray-200 text-sm sm:text-base">
-                    <thead class="bg-gray-50">
+            <div class="table-wrap">
+                <table id="hafalan-table">
+                    <thead>
                         <tr>
-                            <th class="px-2 sm:px-6 py-2 sm:py-4 text-left text-xs font-bold text-gray-600 uppercase">No</th>
-                            <th class="px-2 sm:px-6 py-2 sm:py-4 text-left text-xs font-bold text-gray-600 uppercase">Santri</th>
-                            <th class="px-2 sm:px-6 py-2 sm:py-4 text-left text-xs font-bold text-gray-600 uppercase hidden sm:table-cell">Kelas</th>
-                            <th class="px-2 sm:px-6 py-2 sm:py-4 text-left text-xs font-bold text-gray-600 uppercase">Surah</th>
-                            <th class="px-2 sm:px-6 py-2 sm:py-4 text-left text-xs font-bold text-gray-600 uppercase hidden sm:table-cell">Ayat</th>
-                            <th class="px-2 sm:px-6 py-2 sm:py-4 text-center text-xs font-bold text-gray-600 uppercase hidden lg:table-cell">Juz</th>
-                            <th class="px-2 sm:px-6 py-2 sm:py-4 text-center text-xs font-bold text-gray-600 uppercase hidden md:table-cell">Jml Ayat</th>
-                            <th class="px-2 sm:px-6 py-2 sm:py-4 text-center text-xs font-bold text-gray-600 uppercase">Jenis</th>
-                            <th class="px-2 sm:px-6 py-2 sm:py-4 text-center text-xs font-bold text-gray-600 uppercase">Status</th>
-                            <th class="px-2 sm:px-6 py-2 sm:py-4 text-center text-xs font-bold text-gray-600 uppercase hidden lg:table-cell">Audio</th>
-                            <th class="px-2 sm:px-6 py-2 sm:py-4 text-left text-xs font-bold text-gray-600 uppercase hidden sm:table-cell">Tanggal</th>
-                            <th class="px-2 sm:px-6 py-2 sm:py-4 text-left text-xs font-bold text-gray-600 uppercase hidden md:table-cell">Verifikasi</th>
-                            <th class="px-2 sm:px-6 py-2 sm:py-4 text-center text-xs font-bold text-gray-600 uppercase">Aksi</th>
+                            <th class="col-no">No</th>
+                            <th class="col-santri">Santri</th>
+                            <th class="col-surah">Surah &amp; Ayat</th>
+                            <th class="col-juz">Juz</th>
+                            <th class="col-jenis">Jenis</th>
+                            <th class="col-status">Status</th>
+                            <th class="col-audio">Audio</th>
+                            <th class="col-tanggal">Tanggal</th>
+                            <th class="col-verifikasi">Verifikasi</th>
+                            <th class="col-aksi">Aksi</th>
                         </tr>
                     </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        <!-- DataTable will populate this -->
+                    <tbody>
+                        {{-- DataTables will populate this --}}
                     </tbody>
                 </table>
             </div>
+
+            <div class="table-footer-custom" id="table-footer-info">
+                {{-- Filled by DataTable callbacks --}}
+            </div>
+        </div>
+
+    </div>
+
+    {{-- Verify Modal --}}
+    <div id="verify-modal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <div class="modal-header">
+                <div class="modal-icon modal-icon-success">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+                        viewBox="0 0 24 24">
+                        <path d="M20 6L9 17l-5-5" />
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="modal-title">Verifikasi Hafalan</h3>
+                    <p class="modal-subtitle">Konfirmasi bahwa hafalan ini sudah benar</p>
+                </div>
+            </div>
+            <form id="verify-form">
+                <div class="form-group">
+                    <label class="form-label">Catatan <span class="text-muted">(Opsional)</span></label>
+                    <textarea id="verify-notes" rows="3" class="form-textarea" placeholder="Tambahkan catatan untuk santri..."></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" onclick="closeVerifyModal()" class="btn-modal btn-modal-cancel">Batal</button>
+                    <button type="submit" class="btn-modal btn-modal-success">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"
+                            viewBox="0 0 24 24">
+                            <path d="M20 6L9 17l-5-5" />
+                        </svg>
+                        Verifikasi
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
-    <!-- Verify Modal -->
-    <div id="verify-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 p-4 flex items-center sm:items-start sm:justify-center sm:pt-20">
-        <div class="relative mx-auto p-4 sm:p-5 border w-full sm:w-96 shadow-lg rounded-lg bg-white">
-            <div class="mt-3">
-                <h3 class="text-base sm:text-lg font-medium leading-6 text-gray-900 mb-4">Verifikasi Hafalan</h3>
-                <form id="verify-form">
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Catatan (Opsional)</label>
-                        <textarea id="verify-notes" rows="3"
-                            class="w-full text-sm rounded-lg border border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 p-2"
-                            placeholder="Tambahkan catatan..."></textarea>
-                    </div>
-                    <div class="flex gap-2">
-                        <button type="button" onclick="closeVerifyModal()"
-                            class="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-semibold text-sm px-4 py-2 rounded-lg">
-                            Batal
-                        </button>
-                        <button type="submit"
-                            class="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold text-sm px-4 py-2 rounded-lg">
-                            Verifikasi
-                        </button>
-                    </div>
-                </form>
+    {{-- Reject Modal --}}
+    <div id="reject-modal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <div class="modal-header">
+                <div class="modal-icon modal-icon-danger">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+                        viewBox="0 0 24 24">
+                        <path d="M18 6L6 18M6 6l12 12" />
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="modal-title">Tolak Hafalan</h3>
+                    <p class="modal-subtitle">Berikan alasan penolakan yang jelas</p>
+                </div>
+            </div>
+            <form id="reject-form">
+                <div class="form-group">
+                    <label class="form-label">Alasan Penolakan <span class="text-required">*</span></label>
+                    <textarea id="reject-reason" rows="3" required class="form-textarea"
+                        placeholder="Masukkan alasan penolakan..."></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" onclick="closeRejectModal()" class="btn-modal btn-modal-cancel">Batal</button>
+                    <button type="submit" class="btn-modal btn-modal-danger">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"
+                            viewBox="0 0 24 24">
+                            <path d="M18 6L6 18M6 6l12 12" />
+                        </svg>
+                        Tolak Hafalan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- Delete Confirm Modal --}}
+    <div id="delete-modal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <div class="modal-header">
+                <div class="modal-icon modal-icon-warning">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+                        viewBox="0 0 24 24">
+                        <polyline points="3 6 5 6 21 6" />
+                        <path d="M19 6l-1 14H6L5 6m5 0V4h4v2" />
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="modal-title">Hapus Hafalan</h3>
+                    <p class="modal-subtitle">Tindakan ini tidak dapat dibatalkan</p>
+                </div>
+            </div>
+            <p class="modal-body-text">Apakah Anda yakin ingin menghapus data hafalan ini? Data yang sudah dihapus tidak
+                dapat dikembalikan.</p>
+            <div class="modal-actions">
+                <button type="button" onclick="closeDeleteModal()" class="btn-modal btn-modal-cancel">Batal</button>
+                <button type="button" onclick="confirmDelete()" class="btn-modal btn-modal-danger">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"
+                        viewBox="0 0 24 24">
+                        <polyline points="3 6 5 6 21 6" />
+                        <path d="M19 6l-1 14H6L5 6m5 0V4h4v2" />
+                    </svg>
+                    Hapus
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- Reject Modal -->
-    <div id="reject-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 p-4 flex items-center sm:items-start sm:justify-center sm:pt-20">
-        <div class="relative mx-auto p-4 sm:p-5 border w-full sm:w-96 shadow-lg rounded-lg bg-white">
-            <div class="mt-3">
-                <h3 class="text-base sm:text-lg font-medium leading-6 text-gray-900 mb-4">Tolak Hafalan</h3>
-                <form id="reject-form">
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Alasan Penolakan *</label>
-                        <textarea id="reject-reason" rows="3" required
-                            class="w-full text-sm rounded-lg border border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 p-2"
-                            placeholder="Masukkan alasan penolakan..."></textarea>
-                    </div>
-                    <div class="flex gap-2">
-                        <button type="button" onclick="closeRejectModal()"
-                            class="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-semibold text-sm px-4 py-2 rounded-lg">
-                            Batal
-                        </button>
-                        <button type="submit"
-                            class="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold text-sm px-4 py-2 rounded-lg">
-                            Tolak
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+    {{-- Toast Notification --}}
+    <div id="toast" class="toast hidden">
+        <div class="toast-icon" id="toast-icon"></div>
+        <span id="toast-message"></span>
     </div>
 @endsection
 
 @push('styles')
-    <!-- DataTables CSS -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
-    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
-    
+
     <style>
-        /* Table Styling */
-        #hafalan-table {
-            font-size: 0.95rem;
+        /* =============================================
+       HAFALAN PAGE — CLEAN REDESIGN
+       ============================================= */
+
+        .hafalan-page {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 1.5rem 1rem 3rem;
         }
 
-        #hafalan-table thead th {
-            background-color: #f9fafb;
-            padding: 10px 12px;
+        /* --- Page Header --- */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #111827;
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .page-subtitle {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin: 4px 0 0;
+        }
+
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 9px 18px;
+            background: #2563eb;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.875rem;
             font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            border-bottom: 1px solid #e5e7eb;
+            cursor: pointer;
+            text-decoration: none;
+            white-space: nowrap;
+            transition: background 0.15s;
         }
 
-        #hafalan-table tbody td {
-            padding: 10px 12px;
-            vertical-align: middle;
-            line-height: 1.5;
+        .btn-primary:hover {
+            background: #1d4ed8;
+            color: #fff;
+            text-decoration: none;
         }
 
-        #hafalan-table tbody tr {
-            transition: background-color 0.2s ease;
+        /* --- Card Base --- */
+        .card {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            overflow: hidden;
         }
 
-        #hafalan-table tbody tr:hover {
-            background-color: #f3f4f6;
+        /* --- Filter Card --- */
+        .filter-card {
+            padding: 1.25rem;
+            margin-bottom: 1.25rem;
         }
 
-        /* Responsive padding */
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
         @media (min-width: 640px) {
-            #hafalan-table thead th {
-                padding: 12px 16px;
-            }
-
-            #hafalan-table tbody td {
-                padding: 12px 16px;
+            .filter-grid {
+                grid-template-columns: repeat(3, 1fr);
             }
         }
 
-        /* Mobile responsive */
-        @media (max-width: 640px) {
-            #hafalan-table {
-                font-size: 0.85rem;
-            }
-
-            #hafalan-table thead th {
-                padding: 8px 10px;
-                font-size: 0.7rem;
-            }
-
-            #hafalan-table tbody td {
-                padding: 8px 10px;
+        @media (min-width: 1024px) {
+            .filter-grid {
+                grid-template-columns: repeat(6, 1fr);
             }
         }
 
-        /* Scrollable container styling */
-        .overflow-x-auto {
+        .filter-label {
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            margin-bottom: 5px;
+        }
+
+        .filter-input {
+            width: 100%;
+            padding: 7px 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 7px;
+            font-size: 0.8125rem;
+            color: #374151;
+            background: #fff;
+            transition: border-color 0.15s, box-shadow 0.15s;
+            -webkit-appearance: auto;
+        }
+
+        .filter-input:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-filter {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 20px;
+            border-radius: 7px;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: background 0.15s;
+        }
+
+        .btn-apply {
+            background: #2563eb;
+            color: #fff;
+        }
+
+        .btn-apply:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-reset {
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #e5e7eb;
+        }
+
+        .btn-reset:hover {
+            background: #e5e7eb;
+        }
+
+        /* --- Table Card --- */
+        .table-card {
+            margin-bottom: 1.5rem;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid #e5e7eb;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .table-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #111827;
+            margin: 0;
+        }
+
+        .table-search {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 10px;
+            color: #9ca3af;
+            pointer-events: none;
+        }
+
+        .search-input {
+            padding: 7px 12px 7px 32px;
+            border: 1px solid #d1d5db;
+            border-radius: 7px;
+            font-size: 0.8125rem;
+            color: #374151;
+            width: 220px;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+            width: 260px;
+        }
+
+        @media (max-width: 480px) {
+            .search-input {
+                width: 160px;
+            }
+
+            .search-input:focus {
+                width: 190px;
+            }
+        }
+
+        /* --- DataTable Overrides --- */
+        .table-wrap {
+            overflow-x: auto;
             -webkit-overflow-scrolling: touch;
         }
 
-        /* Better centering for action columns */
-        .text-center {
-            text-align: center;
+        #hafalan-table {
+            width: 100% !important;
+            border-collapse: collapse;
+            font-size: 0.8125rem;
+            min-width: 720px;
         }
 
-        /* DataTable controls styling */
-        .dataTables_wrapper .dataTables_paginate .paginate_button {
-            padding: 6px 12px;
-            margin-left: 2px;
-            border-radius: 4px;
-            border: 1px solid #d1d5db;
-            background: white;
+        #hafalan-table thead th {
+            padding: 10px 14px;
+            background: #f9fafb;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #6b7280;
+            border-bottom: 1px solid #e5e7eb;
+            border-top: none;
+            white-space: nowrap;
+        }
+
+        #hafalan-table thead th:after,
+        #hafalan-table thead th:before {
+            display: none;
+        }
+
+        #hafalan-table thead th.sorting,
+        #hafalan-table thead th.sorting_asc,
+        #hafalan-table thead th.sorting_desc {
+            background-image: none !important;
+            padding-right: 14px;
+        }
+
+        #hafalan-table tbody td {
+            padding: 11px 14px;
+            border-bottom: 1px solid #f3f4f6;
+            vertical-align: middle;
             color: #374151;
-            cursor: pointer;
-            transition: all 0.2s ease;
+            background: #fff;
         }
 
-        .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+        #hafalan-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        #hafalan-table tbody tr:hover td {
+            background: #f9fafb;
+        }
+
+        /* DataTable layout controls — hidden, replaced by custom */
+        .dataTables_wrapper .dataTables_length,
+        .dataTables_wrapper .dataTables_filter,
+        .dataTables_wrapper .dataTables_info,
+        .dataTables_wrapper .dataTables_paginate {
+            display: none !important;
+        }
+
+        /* Processing */
+        .dataTables_processing {
+            background: rgba(255, 255, 255, 0.9) !important;
+            border: 1px solid #e5e7eb !important;
+            border-radius: 8px !important;
+            font-size: 0.8125rem !important;
+            color: #6b7280 !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+            padding: 12px 20px !important;
+        }
+
+        /* --- Santri Cell --- */
+        .santri-cell {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            flex-shrink: 0;
+            letter-spacing: 0.3px;
+        }
+
+        .santri-name {
+            font-weight: 600;
+            color: #111827;
+            font-size: 0.8125rem;
+            line-height: 1.3;
+        }
+
+        .santri-class {
+            font-size: 0.7rem;
+            color: #9ca3af;
+            margin-top: 1px;
+        }
+
+        /* --- Surah Cell --- */
+        .surah-name {
+            font-weight: 600;
+            color: #111827;
+            font-size: 0.8125rem;
+        }
+
+        .surah-meta {
+            font-size: 0.7rem;
+            color: #9ca3af;
+            margin-top: 2px;
+        }
+
+        /* --- Badges --- */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.6875rem;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+            white-space: nowrap;
+        }
+
+        .badge-setoran {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .badge-murajah {
+            background: #e0f2fe;
+            color: #0369a1;
+        }
+
+        .badge-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-verified {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-rejected {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* --- Juz --- */
+        .juz-num {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
             background: #f3f4f6;
-            border-color: #9ca3af;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #374151;
         }
 
-        .dataTables_wrapper .dataTables_paginate .paginate_button.current {
-            background: #3b82f6;
-            color: white;
-            border-color: #3b82f6;
+        /* --- Audio Button --- */
+        .audio-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 1px solid #e5e7eb;
+            background: #fff;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #6b7280;
+            transition: all 0.15s;
         }
 
-        .dataTables_wrapper .dataTables_paginate .paginate_button.disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
+        .audio-btn:hover {
+            background: #f0fdf4;
+            border-color: #bbf7d0;
+            color: #16a34a;
         }
 
-        .dataTables_wrapper .dataTables_info {
-            padding: 12px 16px;
-            font-size: 0.85rem;
+        .audio-btn.playing {
+            background: #f0fdf4;
+            border-color: #86efac;
+            color: #16a34a;
+        }
+
+        .no-audio {
+            color: #d1d5db;
+            font-size: 0.875rem;
+        }
+
+        /* --- Date --- */
+        .date-text {
+            font-size: 0.75rem;
+            color: #6b7280;
+            white-space: nowrap;
+        }
+
+        /* --- Verified info --- */
+        .verified-by {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .verified-date {
+            font-size: 0.6875rem;
+            color: #9ca3af;
+        }
+
+        /* --- Action Buttons --- */
+        .action-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            justify-content: center;
+        }
+
+        .action-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 7px;
+            border: 1px solid #e5e7eb;
+            background: #fff;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+            text-decoration: none;
+        }
+
+        .action-btn:hover {
+            border-color: transparent;
+        }
+
+        .action-btn.view {
+            color: #2563eb;
+        }
+
+        .action-btn.view:hover {
+            background: #eff6ff;
+            border-color: #bfdbfe;
+        }
+
+        .action-btn.verify {
+            color: #16a34a;
+        }
+
+        .action-btn.verify:hover {
+            background: #f0fdf4;
+            border-color: #bbf7d0;
+        }
+
+        .action-btn.reject {
+            color: #dc2626;
+        }
+
+        .action-btn.reject:hover {
+            background: #fef2f2;
+            border-color: #fecaca;
+        }
+
+        .action-btn.del {
+            color: #dc2626;
+        }
+
+        .action-btn.del:hover {
+            background: #fef2f2;
+            border-color: #fecaca;
+        }
+
+        /* --- Table Footer Custom --- */
+        .table-footer-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 1.25rem;
+            border-top: 1px solid #e5e7eb;
+            background: #f9fafb;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .footer-text {
+            font-size: 0.75rem;
             color: #6b7280;
         }
 
-        .dataTables_wrapper .dataTables_length,
-        .dataTables_wrapper .dataTables_filter {
-            padding: 12px 16px;
+        .pagination-custom {
+            display: flex;
+            gap: 4px;
         }
 
-        .dataTables_wrapper .dataTables_filter input {
-            padding: 6px 12px;
-            border: 1px solid #d1d5db;
-            border-radius: 4px;
-            margin-left: 8px;
-        }
-
-        .dataTables_wrapper .dataTables_length select {
-            padding: 6px 12px;
-            border: 1px solid #d1d5db;
-            border-radius: 4px;
-            margin-left: 8px;
-        }
-
-        /* Processing indicator */
-        .dataTables_processing {
-            background: white;
+        .pg-btn {
+            min-width: 30px;
+            height: 30px;
+            padding: 0 8px;
             border: 1px solid #e5e7eb;
-            border-radius: 4px;
-            font-size: 0.85rem;
+            border-radius: 6px;
+            background: #fff;
+            font-size: 0.75rem;
+            color: #374151;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+        }
+
+        .pg-btn:hover:not(.disabled):not(.active) {
+            background: #f3f4f6;
+        }
+
+        .pg-btn.active {
+            background: #2563eb;
+            color: #fff;
+            border-color: #2563eb;
+        }
+
+        .pg-btn.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* --- Modal --- */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .modal-overlay.hidden {
+            display: none;
+        }
+
+        .modal-box {
+            background: #fff;
+            border-radius: 14px;
+            padding: 1.5rem;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            animation: modalIn 0.2s ease;
+        }
+
+        @keyframes modalIn {
+            from {
+                opacity: 0;
+                transform: scale(0.96) translateY(-8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 1.25rem;
+        }
+
+        .modal-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .modal-icon-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .modal-icon-danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .modal-icon-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .modal-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #111827;
+            margin: 0;
+        }
+
+        .modal-subtitle {
+            font-size: 0.8125rem;
+            color: #6b7280;
+            margin: 2px 0 0;
+        }
+
+        .modal-body-text {
+            font-size: 0.875rem;
+            color: #374151;
+            line-height: 1.6;
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 6px;
+        }
+
+        .text-muted {
+            color: #9ca3af;
+            font-weight: 400;
+        }
+
+        .text-required {
+            color: #dc2626;
+        }
+
+        .form-textarea {
+            width: 100%;
+            padding: 9px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            color: #374151;
+            resize: vertical;
+            font-family: inherit;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .form-textarea:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 1.25rem;
+        }
+
+        .btn-modal {
+            flex: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 9px 16px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: background 0.15s;
+        }
+
+        .btn-modal-cancel {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .btn-modal-cancel:hover {
+            background: #e5e7eb;
+        }
+
+        .btn-modal-success {
+            background: #16a34a;
+            color: #fff;
+        }
+
+        .btn-modal-success:hover {
+            background: #15803d;
+        }
+
+        .btn-modal-danger {
+            background: #dc2626;
+            color: #fff;
+        }
+
+        .btn-modal-danger:hover {
+            background: #b91c1c;
+        }
+
+        /* --- Toast --- */
+        .toast {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            background: #111827;
+            color: #fff;
+            padding: 12px 18px;
+            border-radius: 10px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 99999;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+            animation: slideUp 0.25s ease;
+            max-width: 340px;
+        }
+
+        .toast.hidden {
+            display: none;
+        }
+
+        .toast.success {
+            background: #065f46;
+        }
+
+        .toast.error {
+            background: #991b1b;
+        }
+
+        .toast-icon {
+            font-size: 16px;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* --- Responsive Columns --- */
+        @media (max-width: 768px) {
+
+            .col-juz,
+            .col-audio,
+            .col-verifikasi {
+                display: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .col-tanggal {
+                display: none;
+            }
+
+            .hafalan-page {
+                padding: 1rem 0.75rem 2rem;
+            }
+
+            .page-title {
+                font-size: 1.25rem;
+            }
         }
     </style>
 @endpush
 
-
 @push('scripts')
-    <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-    <!-- DataTables JS -->
     <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
 
     <script>
         let table;
         let currentHafalanId;
+        const AVATAR_COLORS = [{
+                bg: '#dbeafe',
+                text: '#1e40af'
+            },
+            {
+                bg: '#d1fae5',
+                text: '#065f46'
+            },
+            {
+                bg: '#fce7f3',
+                text: '#9d174d'
+            },
+            {
+                bg: '#fef3c7',
+                text: '#92400e'
+            },
+            {
+                bg: '#e0e7ff',
+                text: '#3730a3'
+            },
+            {
+                bg: '#ffedd5',
+                text: '#9a3412'
+            },
+        ];
+
+        function getAvatarColor(name) {
+            let hash = 0;
+            for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+            return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+        }
+
+        function getInitials(name) {
+            return name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '<span class="no-audio">—</span>';
+            const d = new Date(dateStr);
+            if (isNaN(d)) return dateStr;
+            return d.toLocaleDateString('id-ID', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+            });
+        }
 
         $(document).ready(function() {
-            // Initialize DataTable
+
+            // Connect custom search box to DataTable
+            $('#hafalan-search').on('keyup', function() {
+                table.search(this.value).draw();
+            });
+
             table = $('#hafalan-table').DataTable({
                 processing: true,
                 serverSide: true,
-                responsive: true,
                 ajax: {
                     url: "{{ route('hafalan.index') }}",
                     data: function(d) {
@@ -348,21 +1121,6 @@
                         d.date_to = $('#filter-date-to').val();
                     }
                 },
-                columnDefs: [
-                    { responsivePriority: 1, targets: 0 }, // No
-                    { responsivePriority: 2, targets: 1 }, // Santri
-                    { responsivePriority: 7, targets: 2 }, // Kelas
-                    { responsivePriority: 3, targets: 3 }, // Surah
-                    { responsivePriority: 8, targets: 4 }, // Ayat
-                    { responsivePriority: 9, targets: 5 }, // Juz
-                    { responsivePriority: 10, targets: 6 }, // Jml Ayat
-                    { responsivePriority: 4, targets: 7 }, // Jenis
-                    { responsivePriority: 5, targets: 8 }, // Status
-                    { responsivePriority: 11, targets: 9 }, // Audio
-                    { responsivePriority: 12, targets: 10 }, // Tanggal
-                    { responsivePriority: 13, targets: 11 }, // Verifikasi
-                    { responsivePriority: 6, targets: 12 } // Aksi
-                ],
                 columns: [{
                         data: 'DT_RowIndex',
                         name: 'DT_RowIndex',
@@ -374,43 +1132,24 @@
                         name: 'user.name'
                     },
                     {
-                        data: 'class_name',
-                        name: 'class.name'
-                    },
-                    {
                         data: 'surah_info',
                         name: 'surah_number'
                     },
                     {
-                        data: 'ayat_range',
-                        name: 'ayat_start',
-                        orderable: false
-                    },
-                    {
                         data: 'juz_number',
-                        name: 'juz_number',
-                        className: 'text-center'
+                        name: 'juz_number'
                     },
                     {
-                        data: 'ayat_count',
-                        name: 'ayat_count',
-                        className: 'text-center',
-                        orderable: false
+                        data: 'type',
+                        name: 'type'
                     },
                     {
-                        data: 'type_badge',
-                        name: 'type',
-                        className: 'text-center'
+                        data: 'status',
+                        name: 'status'
                     },
                     {
-                        data: 'status_badge',
-                        name: 'status',
-                        className: 'text-center'
-                    },
-                    {
-                        data: 'has_audio',
-                        name: 'has_audio',
-                        className: 'text-center',
+                        data: 'audio_path',
+                        name: 'audio_path',
                         orderable: false,
                         searchable: false
                     },
@@ -419,71 +1158,291 @@
                         name: 'hafalan_date'
                     },
                     {
-                        data: 'verified_info',
+                        data: 'verified_at',
                         name: 'verified_at',
                         orderable: false
                     },
                     {
-                        data: 'action',
-                        name: 'action',
+                        data: 'id',
+                        name: 'id',
                         orderable: false,
-                        searchable: false,
-                        className: 'text-center'
+                        searchable: false
+                    }
+                ],
+                columnDefs: [{
+                        targets: 0,
+                        width: '40px',
+                        className: 'col-no',
+                        render: (d, t, r, m) =>
+                            `<span style="color:#9ca3af;font-size:0.75rem">${d}</span>`
+                    },
+                    {
+                        targets: 1,
+                        className: 'col-santri',
+                        render: function(d, t, row) {
+                            const color = getAvatarColor(d);
+                            const initials = getInitials(d);
+                            const kelas = row.class_name || '';
+                            return `<div class="santri-cell">
+                        <div class="avatar" style="background:${color.bg};color:${color.text}">${initials}</div>
+                        <div>
+                            <div class="santri-name">${d}</div>
+                            <div class="santri-class">${kelas}</div>
+                        </div>
+                    </div>`;
+                        }
+                    },
+                    {
+                        targets: 2,
+                        className: 'col-surah',
+                        render: function(d, t, row) {
+                            const ayat = row.ayat_range || '';
+                            const count = row.ayat_count || '';
+                            const meta = [ayat ? `Ayat ${ayat}` : '', count ? `${count} ayat` : '']
+                                .filter(Boolean).join(' · ');
+                            return `<div class="surah-name">${d}</div>${meta ? `<div class="surah-meta">${meta}</div>` : ''}`;
+                        }
+                    },
+                    {
+                        targets: 3,
+                        className: 'col-juz text-center',
+                        render: d => d ? `<div class="juz-num">${d}</div>` :
+                            '<span class="no-audio">—</span>'
+                    },
+                    {
+                        targets: 4,
+                        className: 'col-jenis text-center',
+                        render: d => {
+                            const map = {
+                                setoran: 'badge-setoran',
+                                murajah: 'badge-murajah',
+                                "muraja'ah": 'badge-murajah'
+                            };
+                            const cls = map[(d || '').toLowerCase()] || 'badge-setoran';
+                            const label = d === 'murajah' ? "Muraja'ah" : 'Setoran';
+                            return `<span class="badge ${cls}">${label}</span>`;
+                        }
+                    },
+                    {
+                        targets: 5,
+                        className: 'col-status text-center',
+                        render: d => {
+                            const map = {
+                                pending: 'badge-pending',
+                                verified: 'badge-verified',
+                                rejected: 'badge-rejected'
+                            };
+                            const cls = map[(d || '').toLowerCase()] || 'badge-pending';
+                            const label = {
+                                pending: 'Pending',
+                                verified: 'Verified',
+                                rejected: 'Rejected'
+                            } [(d || '').toLowerCase()] || d;
+                            return `<span class="badge ${cls}">${label}</span>`;
+                        }
+                    },
+                    {
+                        targets: 6,
+                        className: 'col-audio text-center',
+                        render: function(d, t, row) {
+                            if (!d) return '<span class="no-audio">—</span>';
+                            return `<button class="audio-btn" onclick="playAudio('${d}', this)" title="Putar audio">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                            <path d="M15.54 8.46a5 5 0 010 7.07"/>
+                        </svg>
+                    </button>`;
+                        }
+                    },
+                    {
+                        targets: 7,
+                        className: 'col-tanggal',
+                        render: d => `<div class="date-text">${formatDate(d)}</div>`
+                    },
+                    {
+                        targets: 8,
+                        className: 'col-verifikasi',
+                        render: function(d, t, row) {
+                            if (!d) return '<span class="no-audio">—</span>';
+                            const name = row.verified_by_name || 'Admin';
+                            return `<div class="verified-by">${name}</div><div class="verified-date">${formatDate(d)}</div>`;
+                        }
+                    },
+                    {
+                        targets: 9,
+                        className: 'col-aksi text-center',
+                        render: function(d, t, row) {
+                            const status = (row.status || '').toLowerCase();
+                            const canAct =
+                                {{ auth()->user()->can('verify_hafalan') ? 'true' : 'false' }};
+                            const canDel =
+                                {{ auth()->user()->can('delete_hafalan') ? 'true' : 'false' }};
+                            const showUrl = `/hafalan/${d}`;
+
+                            let html = `<div class="action-group">
+                        <a href="${showUrl}" class="action-btn view" title="Lihat Detail">
+                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                            </svg>
+                        </a>`;
+
+                            if (canAct && status === 'pending') {
+                                html += `<button class="action-btn verify" onclick="verifyHafalan(${d})" title="Verifikasi">
+                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M20 6L9 17l-5-5"/>
+                            </svg>
+                        </button>
+                        <button class="action-btn reject" onclick="rejectHafalan(${d})" title="Tolak">
+                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M18 6L6 18M6 6l12 12"/>
+                            </svg>
+                        </button>`;
+                            }
+
+                            if (canDel) {
+                                html += `<button class="action-btn del" onclick="deleteHafalan(${d})" title="Hapus">
+                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6m5 0V4h4v2"/>
+                            </svg>
+                        </button>`;
+                            }
+
+                            html += `</div>`;
+                            return html;
+                        }
                     }
                 ],
                 order: [
-                    [10, 'desc']
+                    [7, 'desc']
                 ],
                 pageLength: 25,
+                dom: 'tp', // processing + table only — pagination handled custom
                 language: {
-                    processing: "Memuat data...",
-                    search: "Cari:",
-                    lengthMenu: "Tampilkan _MENU_ data",
-                    info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
-                    infoEmpty: "Menampilkan 0 sampai 0 dari 0 data",
-                    infoFiltered: "(disaring dari _MAX_ total data)",
-                    zeroRecords: "Tidak ada data yang ditemukan",
-                    emptyTable: "Tidak ada data tersedia",
-                    paginate: {
-                        first: "Pertama",
-                        last: "Terakhir",
-                        next: "Selanjutnya",
-                        previous: "Sebelumnya"
-                    }
+                    processing: "Memuat data..."
+                },
+                drawCallback: function(settings) {
+                    renderFooter(settings);
                 }
             });
-        });;
 
-        // Apply Filters
-        function applyFilters() {
+            // Render custom footer
+            function renderFooter(settings) {
+                const api = new $.fn.dataTable.Api(settings);
+                const info = api.page.info();
+                const start = info.start + 1;
+                const end = Math.min(info.end, info.recordsDisplay);
+                const total = info.recordsDisplay;
+                const page = info.page;
+                const pages = info.pages;
+
+                let paginationHtml = '';
+
+                // Prev button
+                paginationHtml +=
+                    `<button class="pg-btn ${page === 0 ? 'disabled' : ''}" onclick="goPage(${page - 1})">&lsaquo;</button>`;
+
+                // Page numbers — show up to 5 around current
+                let startPage = Math.max(0, page - 2);
+                let endPage = Math.min(pages - 1, startPage + 4);
+                startPage = Math.max(0, endPage - 4);
+
+                for (let i = startPage; i <= endPage; i++) {
+                    paginationHtml +=
+                        `<button class="pg-btn ${i === page ? 'active' : ''}" onclick="goPage(${i})">${i + 1}</button>`;
+                }
+
+                // Next button
+                paginationHtml +=
+                    `<button class="pg-btn ${page >= pages - 1 ? 'disabled' : ''}" onclick="goPage(${page + 1})">&rsaquo;</button>`;
+
+                const infoText = total === 0 ?
+                    'Tidak ada data ditemukan' :
+                    `Menampilkan ${start}–${end} dari ${total} data`;
+
+                $('#hafalan-table').closest('.table-card').find('.table-footer-info').remove();
+                $('#hafalan-table').closest('.table-card').append(`
+            <div class="table-footer-info">
+                <span class="footer-text">${infoText}</span>
+                <div class="pagination-custom">${paginationHtml}</div>
+            </div>
+        `);
+            }
+
+        });
+
+        window.goPage = function(page) {
+            if (page < 0) return;
+            table.page(page).draw('page');
+        };
+
+        // =====================
+        // Filters
+        // =====================
+        window.applyFilters = function() {
             table.ajax.reload();
+        };
+
+        window.resetFilters = function() {
+            $('#filter-status, #filter-type, #filter-class, #filter-juz').val('');
+            $('#filter-date-from, #filter-date-to').val('');
+            table.ajax.reload();
+        };
+
+        // =====================
+        // Audio Player
+        // =====================
+        let currentAudio = null;
+        window.playAudio = function(path, btn) {
+            if (currentAudio) {
+                currentAudio.pause();
+                document.querySelectorAll('.audio-btn.playing').forEach(b => b.classList.remove('playing'));
+                if (currentAudio._btn === btn) {
+                    currentAudio = null;
+                    return;
+                }
+            }
+            currentAudio = new Audio(path);
+            currentAudio._btn = btn;
+            btn.classList.add('playing');
+            btn.innerHTML =
+                `<svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`;
+            currentAudio.play();
+            currentAudio.onended = function() {
+                btn.classList.remove('playing');
+                btn.innerHTML =
+                    `<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 010 7.07"/></svg>`;
+                currentAudio = null;
+            };
+        };
+
+        // =====================
+        // Toast
+        // =====================
+        function showToast(message, type = 'success') {
+            const toast = $('#toast');
+            const icon = type === 'success' ? '✓' : '✕';
+            toast.removeClass('hidden success error').addClass(type);
+            $('#toast-icon').text(icon);
+            $('#toast-message').text(message);
+            toast.removeClass('hidden');
+            setTimeout(() => toast.addClass('hidden'), 3500);
         }
 
-        // Reset Filters
-        function resetFilters() {
-            $('#filter-status').val('');
-            $('#filter-type').val('');
-            $('#filter-class').val('');
-            $('#filter-juz').val('');
-            $('#filter-date-from').val('');
-            $('#filter-date-to').val('');
-            table.ajax.reload();
-        }
-
-        // Verify Hafalan
-        function verifyHafalan(id) {
+        // =====================
+        // Verify
+        // =====================
+        window.verifyHafalan = function(id) {
             currentHafalanId = id;
-            $('#verify-modal').removeClass('hidden');
-        }
-
-        function closeVerifyModal() {
-            $('#verify-modal').addClass('hidden');
             $('#verify-notes').val('');
-        }
+            $('#verify-modal').removeClass('hidden');
+        };
+
+        window.closeVerifyModal = function() {
+            $('#verify-modal').addClass('hidden');
+        };
 
         $('#verify-form').on('submit', function(e) {
             e.preventDefault();
-
             $.ajax({
                 url: `/hafalan/${currentHafalanId}/verify`,
                 method: 'POST',
@@ -493,29 +1452,30 @@
                 },
                 success: function(response) {
                     closeVerifyModal();
-                    table.ajax.reload();
-                    alert(response.message);
+                    table.ajax.reload(null, false);
+                    showToast(response.message || 'Hafalan berhasil diverifikasi', 'success');
                 },
                 error: function(xhr) {
-                    alert('Error: ' + xhr.responseJSON.message);
+                    showToast(xhr.responseJSON?.message || 'Terjadi kesalahan', 'error');
                 }
             });
         });
 
-        // Reject Hafalan
-        function rejectHafalan(id) {
+        // =====================
+        // Reject
+        // =====================
+        window.rejectHafalan = function(id) {
             currentHafalanId = id;
-            $('#reject-modal').removeClass('hidden');
-        }
-
-        function closeRejectModal() {
-            $('#reject-modal').addClass('hidden');
             $('#reject-reason').val('');
-        }
+            $('#reject-modal').removeClass('hidden');
+        };
+
+        window.closeRejectModal = function() {
+            $('#reject-modal').addClass('hidden');
+        };
 
         $('#reject-form').on('submit', function(e) {
             e.preventDefault();
-
             $.ajax({
                 url: `/hafalan/${currentHafalanId}/reject`,
                 method: 'POST',
@@ -525,33 +1485,51 @@
                 },
                 success: function(response) {
                     closeRejectModal();
-                    table.ajax.reload();
-                    alert(response.message);
+                    table.ajax.reload(null, false);
+                    showToast(response.message || 'Hafalan berhasil ditolak', 'success');
                 },
                 error: function(xhr) {
-                    alert('Error: ' + xhr.responseJSON.message);
+                    showToast(xhr.responseJSON?.message || 'Terjadi kesalahan', 'error');
                 }
             });
         });
 
-        // Delete Hafalan
-        function deleteHafalan(id) {
-            if (confirm('Apakah Anda yakin ingin menghapus hafalan ini?')) {
-                $.ajax({
-                    url: `/hafalan/${id}`,
-                    method: 'DELETE',
-                    data: {
-                        _token: '{{ csrf_token() }}'
-                    },
-                    success: function(response) {
-                        table.ajax.reload();
-                        alert(response.message);
-                    },
-                    error: function(xhr) {
-                        alert('Error: ' + xhr.responseJSON.message);
-                    }
-                });
+        // =====================
+        // Delete
+        // =====================
+        window.deleteHafalan = function(id) {
+            currentHafalanId = id;
+            $('#delete-modal').removeClass('hidden');
+        };
+
+        window.closeDeleteModal = function() {
+            $('#delete-modal').addClass('hidden');
+        };
+
+        window.confirmDelete = function() {
+            $.ajax({
+                url: `/hafalan/${currentHafalanId}`,
+                method: 'DELETE',
+                data: {
+                    _token: '{{ csrf_token() }}'
+                },
+                success: function(response) {
+                    closeDeleteModal();
+                    table.ajax.reload(null, false);
+                    showToast(response.message || 'Hafalan berhasil dihapus', 'success');
+                },
+                error: function(xhr) {
+                    closeDeleteModal();
+                    showToast(xhr.responseJSON?.message || 'Terjadi kesalahan', 'error');
+                }
+            });
+        };
+
+        // Close modals on overlay click
+        $('.modal-overlay').on('click', function(e) {
+            if (e.target === this) {
+                $(this).addClass('hidden');
             }
-        }
+        });
     </script>
 @endpush

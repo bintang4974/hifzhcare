@@ -16,10 +16,17 @@
                         <i class="fas fa-edit mr-2"></i>Edit
                     </a>
                 @endcan
-                <a href="{{ route('classes.index') }}"
-                    class="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-xl">
-                    <i class="fas fa-arrow-left mr-2"></i>Kembali
-                </a>
+                @if(auth()->user()->isUstadz())
+                    <a href="{{ route('dashboard') }}"
+                        class="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-xl">
+                        <i class="fas fa-arrow-left mr-2"></i>Kembali
+                    </a>
+                @else
+                    <a href="{{ route('classes.index') }}"
+                        class="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-xl">
+                        <i class="fas fa-arrow-left mr-2"></i>Kembali
+                    </a>
+                @endif
             </div>
         </div>
 
