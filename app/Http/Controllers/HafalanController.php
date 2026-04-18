@@ -402,10 +402,18 @@ class HafalanController extends Controller
             $santri = auth()->user()->santriProfile;
         } elseif (auth()->user()->user_type === 'wali') {
             // Get santri from wali's children
-            $santri = auth()->user()->waliProfile->santriProfiles()->first();
+            if ($userId) {
+                $santri = auth()->user()->waliProfile->santriProfiles()->where('user_id', $userId)->first();
+            } else {
+                $santri = auth()->user()->waliProfile->santriProfiles()->first();
+            }
         } else {
             // Admin/Ustadz viewing specific santri
-            $santri = SantriProfile::findOrFail($userId);
+            if ($userId) {
+                $santri = SantriProfile::where('user_id', $userId)->firstOrFail();
+            } else {
+                abort(404, 'Harap tentukan santri');
+            }
         }
 
         if (!$santri) {
@@ -421,9 +429,7 @@ class HafalanController extends Controller
                 ->where('type', 'per_juz')
                 ->count(),
             'total_verified' => Hafalan::where('user_id', $userId)
-                ->whereHas('audios', function ($q) {
-                    $q->where('status', 'verified');
-                })
+                ->where('status', 'verified')
                 ->count(),
             'certificates' => Certificate::where('user_id', $userId)->count(),
             'current_streak' => $this->calculateStreak($userId),
@@ -500,9 +506,7 @@ class HafalanController extends Controller
             // Count verified hafalan in this juz
             $verified = Hafalan::where('user_id', $santriId)
                 ->where('juz_number', $juzNumber)
-                ->whereHas('audios', function ($q) {
-                    $q->where('status', 'verified');
-                })
+                ->where('status', 'verified')
                 ->count();
 
             // Calculate progress
@@ -602,9 +606,7 @@ class HafalanController extends Controller
     private function calculateAvgPerDay($santriId)
     {
         $totalVerified = Hafalan::where('user_id', $santriId)
-            ->whereHas('audios', function ($q) {
-                $q->where('status', 'verified');
-            })
+            ->where('status', 'verified')
             ->count();
 
         $firstHafalan = Hafalan::where('user_id', $santriId)
@@ -625,9 +627,7 @@ class HafalanController extends Controller
     {
         // Assume average 5 minutes per hafalan
         $totalHafalan = Hafalan::where('user_id', $santriId)
-            ->whereHas('audios', function ($q) {
-                $q->where('status', 'verified');
-            })
+            ->where('status', 'verified')
             ->count();
 
         return round(($totalHafalan * 5) / 60, 1);
