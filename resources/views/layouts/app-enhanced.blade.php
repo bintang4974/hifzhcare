@@ -144,12 +144,14 @@
                 </a>
 
                 @php
-                    $canSeeHafalan = auth()->check() && (
-                        auth()->user()->can('view_all_hafalan') ||
-                        auth()->user()->can('view_class_hafalan') ||
-                        auth()->user()->can('view_own_hafalan') ||
-                        auth()->user()->can('create_hafalan')
-                    );
+                    $canSeeHafalan = auth()->check() && 
+                        auth()->user()->user_type !== 'wali' &&
+                        (
+                            auth()->user()->can('view_all_hafalan') ||
+                            auth()->user()->can('view_class_hafalan') ||
+                            auth()->user()->can('view_own_hafalan') ||
+                            auth()->user()->can('create_hafalan')
+                        );
                 @endphp
 
                 @if($canSeeHafalan)
