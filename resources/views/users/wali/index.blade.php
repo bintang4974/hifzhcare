@@ -1338,8 +1338,12 @@
                 },
                 drawCallback: function(settings) {
                     renderFooter(settings);
+                    updateStats();
                 }
             });
+
+            // Load stats on page load
+            updateStats();
 
             function renderFooter(settings) {
                 const api = new $.fn.dataTable.Api(settings);

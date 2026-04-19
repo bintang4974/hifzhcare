@@ -75,17 +75,7 @@ class ClassController extends Controller
                     : '<span class="text-gray-400">Belum ada ustadz</span>';
             })
             ->addColumn('capacity', function ($class) {
-                $percentage = $class->max_capacity > 0
-                    ? round(($class->current_student_count / $class->max_capacity) * 100)
-                    : 0;
-                $color = $percentage >= 90 ? 'rgb(239, 68, 68)' : ($percentage >= 70 ? 'rgb(234, 179, 8)' : 'rgb(34, 197, 94)');
-
-                return "<div class='flex items-center gap-2'>
-                            <div class='flex-1 bg-gray-200 rounded-full h-2 w-24'>
-                                <div class='h-2 rounded-full' style='width: {$percentage}%; background-color: {$color}'></div>
-                            </div>
-                            <span class='text-xs text-gray-600'>{$class->current_student_count}/{$class->max_capacity}</span>
-                        </div>";
+                return $class->current_student_count . '/' . $class->max_capacity;
             })
             ->addColumn('status_badge', function ($class) {
                 return $class->status === 'active'
@@ -129,7 +119,7 @@ class ClassController extends Controller
 
                 return $actions;
             })
-            ->rawColumns(['ustadz', 'capacity', 'status_badge', 'action'])
+            ->rawColumns(['ustadz', 'status_badge', 'action'])
             ->make(true);
     }
 

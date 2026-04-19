@@ -44,7 +44,8 @@ class WaliController extends Controller
         $query = WaliProfile::with(['user', 'santriProfiles.user'])
             ->join('users', 'users.id', '=', 'wali_profiles.user_id')
             ->select('wali_profiles.*')
-            ->where('wali_profiles.pesantren_id', session('current_pesantren_id'));
+            ->where('wali_profiles.pesantren_id', session('current_pesantren_id'))
+            ->whereHas('user'); // Only show wali with existing (non-deleted) users
 
         // Filters
         if ($request->filled('status')) {
@@ -57,16 +58,16 @@ class WaliController extends Controller
 
         return DataTables::eloquent($query)
             ->addIndexColumn()
-            ->addColumn('name', function($wali) {
-                return $wali->user->name;
+            ->addColumn('name', function ($wali) {
+                return $wali->user?->name ?? '-';
             })
-            ->addColumn('email', function($wali) {
-                return $wali->user->email ?? '-';
+            ->addColumn('email', function ($wali) {
+                return $wali->user?->email ?? '-';
             })
-            ->addColumn('phone', function($wali) {
-                return $wali->user->phone;
+            ->addColumn('phone', function ($wali) {
+                return $wali->user?->phone ?? '-';
             })
-            ->addColumn('relation_label', function($wali) {
+            ->addColumn('relation_label', function ($wali) {
                 $relations = [
                     'ayah' => '<span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded">Ayah</span>',
                     'ibu' => '<span class="px-2 py-1 bg-pink-100 text-pink-800 text-xs font-semibold rounded">Ibu</span>',
@@ -74,31 +75,31 @@ class WaliController extends Controller
                 ];
                 return $relations[$wali->relation] ?? '-';
             })
-            ->addColumn('children_count', function($wali) {
+            ->addColumn('children_count', function ($wali) {
                 return $wali->santriProfiles->count();
             })
-            ->addColumn('children', function($wali) {
+            ->addColumn('children', function ($wali) {
                 if ($wali->santriProfiles->isEmpty()) {
                     return '<span class="text-gray-500 text-sm">Belum ada santri</span>';
                 }
-                
-                $children = $wali->santriProfiles->take(2)->map(function($santri) {
-                    return '<span class="inline-block px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded mr-1 mb-1">' . 
-                           e($santri->user->name) . '</span>';
+
+                $children = $wali->santriProfiles->take(2)->map(function ($santri) {
+                    return '<span class="inline-block px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded mr-1 mb-1">' .
+                        e($santri->user?->name ?? '-') . '</span>';
                 })->join('');
-                
+
                 if ($wali->santriProfiles->count() > 2) {
                     $children .= '<span class="text-xs text-gray-600">+' . ($wali->santriProfiles->count() - 2) . ' lainnya</span>';
                 }
-                
+
                 return $children;
             })
-            ->addColumn('total_donations', function($wali) {
+            ->addColumn('total_donations', function ($wali) {
                 $total = $wali->appreciationFunds()->where('status', 'verified')->sum('amount');
                 return 'Rp ' . number_format($total, 0, ',', '.');
             })
-            ->addColumn('status_badge', function($wali) {
-                $status = $wali->user->status;
+            ->addColumn('status_badge', function ($wali) {
+                $status = $wali->user?->status ?? 'unknown';
                 $badges = [
                     'active' => '<span class="px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800"><i class="fas fa-check-circle mr-1"></i>Aktif</span>',
                     'pending' => '<span class="px-3 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800"><i class="fas fa-clock mr-1"></i>Pending</span>',
@@ -106,16 +107,19 @@ class WaliController extends Controller
                 ];
                 return $badges[$status] ?? $badges['inactive'];
             })
-            ->addColumn('action', function($wali) {
+            ->addColumn('status', function ($wali) {
+                return $wali->user?->status ?? 'unknown';
+            })
+            ->addColumn('action', function ($wali) {
                 $actions = '<div class="flex items-center gap-2 justify-center">';
-                
+
                 // View button
                 $actions .= '<a href="' . route('users.wali.show', $wali->id) . '" 
                               class="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition" 
                               title="Detail">
                               <i class="fas fa-eye"></i>
                             </a>';
-                
+
                 // Edit button
                 if (auth()->user()->can('edit_users')) {
                     $actions .= '<a href="' . route('users.wali.edit', $wali->id) . '" 
@@ -124,7 +128,7 @@ class WaliController extends Controller
                                   <i class="fas fa-edit"></i>
                                 </a>';
                 }
-                
+
                 // Delete button
                 if (auth()->user()->can('delete_users')) {
                     $actions .= '<button onclick="deleteWali(' . $wali->id . ')" 
@@ -133,7 +137,7 @@ class WaliController extends Controller
                                   <i class="fas fa-trash"></i>
                                 </button>';
                 }
-                
+
                 $actions .= '</div>';
                 return $actions;
             })
@@ -157,7 +161,7 @@ class WaliController extends Controller
     {
         try {
             $pesantrenId = session('current_pesantren_id') ?? $request->user()->pesantren_id;
-            
+
             $userData = [
                 'name' => $request->name,
                 'email' => $request->email,
@@ -181,7 +185,6 @@ class WaliController extends Controller
             return redirect()
                 ->route('users.wali.index')
                 ->with('success', 'Wali berhasil ditambahkan!');
-
         } catch (\Exception $e) {
             return redirect()
                 ->back()
@@ -198,10 +201,10 @@ class WaliController extends Controller
         $wali = WaliProfile::with([
             'user',
             'santriProfiles.user',
-            'santriProfiles.hafalans' => function($q) {
+            'santriProfiles.hafalans' => function ($q) {
                 $q->where('status', 'verified');
             },
-            'appreciationFunds' => function($q) {
+            'appreciationFunds' => function ($q) {
                 $q->latest()->take(10);
             }
         ])->findOrFail($id);
@@ -211,13 +214,13 @@ class WaliController extends Controller
             'total_children' => $wali->santriProfiles->count(),
             'total_donations' => $wali->appreciationFunds()->where('status', 'verified')->sum('amount'),
             'pending_donations' => $wali->appreciationFunds()->where('status', 'pending')->count(),
-            'total_hafalan' => $wali->santriProfiles->sum(function($santri) {
+            'total_hafalan' => $wali->santriProfiles->sum(function ($santri) {
                 return $santri->hafalans()->where('status', 'verified')->count();
             }),
         ];
 
         // Children statistics
-        $childrenStats = $wali->santriProfiles->map(function($santri) {
+        $childrenStats = $wali->santriProfiles->map(function ($santri) {
             return [
                 'santri' => $santri,
                 'total_hafalan' => $santri->hafalans()->count(),
@@ -235,7 +238,7 @@ class WaliController extends Controller
     public function edit($id)
     {
         $this->authorize('edit_users');
-        
+
         $wali = WaliProfile::with(['user', 'santriProfiles', 'appreciationFunds'])->findOrFail($id);
         return view('users.wali.edit', compact('wali'));
     }
@@ -266,7 +269,6 @@ class WaliController extends Controller
             return redirect()
                 ->route('users.wali.index')
                 ->with('success', 'Data wali berhasil diupdate!');
-
         } catch (\Exception $e) {
             return redirect()
                 ->back()
@@ -282,9 +284,9 @@ class WaliController extends Controller
     {
         try {
             $this->authorize('delete_users');
-            
+
             $wali = WaliProfile::findOrFail($id);
-            
+
             // Check if wali has children
             if ($wali->santriProfiles()->count() > 0) {
                 return response()->json([
@@ -293,13 +295,8 @@ class WaliController extends Controller
                 ], 400);
             }
 
-            $wali->user->delete();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Wali berhasil dihapus!'
-            ]);
-
+            $wali->user->delete(); // Soft delete user
+            $wali->delete(); // Also soft delete wali profile
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -308,29 +305,33 @@ class WaliController extends Controller
         }
     }
 
-    /**
-     * Get statistics for wali
-     */
     public function stats()
     {
         $pesantrenId = session('current_pesantren_id');
 
         $stats = [
-            'total_wali' => WaliProfile::where('pesantren_id', $pesantrenId)->count(),
-            'active_wali' => User::where('user_type', 'wali')
-                ->where('pesantren_id', $pesantrenId)
-                ->where('status', 'active')
+            'total_wali' => WaliProfile::where('pesantren_id', $pesantrenId)
+                ->whereHas('user')
+                ->count(),
+            'active_wali' => WaliProfile::where('pesantren_id', $pesantrenId)
+                ->whereHas('user', function($q) {
+                    $q->where('status', 'active');
+                })
                 ->count(),
             'total_santri' => DB::table('santri_profiles')
                 ->join('wali_profiles', 'santri_profiles.wali_id', '=', 'wali_profiles.id')
+                ->join('users', 'wali_profiles.user_id', '=', 'users.id')
                 ->where('wali_profiles.pesantren_id', $pesantrenId)
+                ->whereNull('users.deleted_at')
                 ->count(),
             'total_donations' => 'Rp ' . number_format(
                 DB::table('appreciation_fund_donations')
                     ->join('wali_profiles', 'appreciation_fund_donations.wali_id', '=', 'wali_profiles.id')
+                    ->join('users', 'wali_profiles.user_id', '=', 'users.id')
                     ->where('wali_profiles.pesantren_id', $pesantrenId)
-                    ->where('status', 'verified')
-                    ->sum('amount') ?? 0,
+                    ->where('appreciation_fund_donations.status', 'verified')
+                    ->whereNull('users.deleted_at')
+                    ->sum('appreciation_fund_donations.amount') ?? 0,
                 0,
                 ',',
                 '.'

@@ -101,6 +101,7 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
         Route::put('/{ustadz}', [UstadzController::class, 'update'])->name('update');
         Route::delete('/{ustadz}', [UstadzController::class, 'destroy'])->name('destroy');
         Route::post('/{ustadz}/activate', [UstadzController::class, 'activate'])->name('activate');
+        Route::patch('/{ustadz}/toggle-status', [UstadzController::class, 'toggleStatus'])->name('toggle-status');
     });
 
     // Wali Routes

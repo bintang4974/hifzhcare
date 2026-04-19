@@ -176,7 +176,7 @@
                 <div x-show="useExisting" x-cloak>
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Pilih Wali</label>
-                        <select name="wali_id"
+                        <select id="wali-select" name="wali_id" :disabled="!useExisting"
                             class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring focus:ring-green-200">
                             <option value="">Pilih Wali yang Sudah Ada</option>
                             @foreach ($walis as $wali)
@@ -197,7 +197,7 @@
                                 <i class="fas fa-user mr-1 text-green-600"></i>
                                 Nama Wali <span class="text-red-500">*</span>
                             </label>
-                            <input type="text" name="wali_name" value="{{ old('wali_name') }}"
+                            <input type="text" name="wali_name" value="{{ old('wali_name') }}" :disabled="useExisting"
                                 class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring focus:ring-green-200 @error('wali_name') border-red-500 @enderror"
                                 placeholder="Masukkan nama wali">
                             @error('wali_name')
@@ -211,7 +211,7 @@
                                 <i class="fas fa-heart mr-1 text-green-600"></i>
                                 Hubungan <span class="text-red-500">*</span>
                             </label>
-                            <select name="wali_relation"
+                            <select name="wali_relation" :disabled="useExisting"
                                 class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring focus:ring-green-200 @error('wali_relation') border-red-500 @enderror">
                                 <option value="">Pilih Hubungan</option>
                                 <option value="ayah" {{ old('wali_relation') == 'ayah' ? 'selected' : '' }}>Ayah
@@ -231,7 +231,7 @@
                                 <i class="fas fa-id-card mr-1 text-green-600"></i>
                                 NIK (Opsional)
                             </label>
-                            <input type="text" name="wali_nik" value="{{ old('wali_nik') }}" maxlength="16"
+                            <input type="text" name="wali_nik" value="{{ old('wali_nik') }}" maxlength="16" :disabled="useExisting"
                                 class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring focus:ring-green-200 @error('wali_nik') border-red-500 @enderror"
                                 placeholder="16 digit NIK">
                             @error('wali_nik')
@@ -245,7 +245,7 @@
                                 <i class="fas fa-envelope mr-1 text-green-600"></i>
                                 Email Wali (Opsional)
                             </label>
-                            <input type="email" name="wali_email" value="{{ old('wali_email') }}"
+                            <input type="email" name="wali_email" value="{{ old('wali_email') }}" :disabled="useExisting"
                                 class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring focus:ring-green-200 @error('wali_email') border-red-500 @enderror"
                                 placeholder="wali@example.com">
                             @error('wali_email')
@@ -259,7 +259,7 @@
                                 <i class="fas fa-phone mr-1 text-green-600"></i>
                                 Nomor HP Wali <span class="text-red-500">*</span>
                             </label>
-                            <input type="tel" name="wali_phone" value="{{ old('wali_phone') }}"
+                            <input type="tel" name="wali_phone" value="{{ old('wali_phone') }}" :disabled="useExisting"
                                 class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring focus:ring-green-200 @error('wali_phone') border-red-500 @enderror"
                                 placeholder="08123456789">
                             @error('wali_phone')
@@ -273,7 +273,7 @@
                                 <i class="fas fa-briefcase mr-1 text-green-600"></i>
                                 Pekerjaan (Opsional)
                             </label>
-                            <input type="text" name="wali_occupation" value="{{ old('wali_occupation') }}"
+                            <input type="text" name="wali_occupation" value="{{ old('wali_occupation') }}" :disabled="useExisting"
                                 class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring focus:ring-green-200 @error('wali_occupation') border-red-500 @enderror"
                                 placeholder="Contoh: Guru, Wiraswasta">
                             @error('wali_occupation')
@@ -287,7 +287,7 @@
                                 <i class="fas fa-map-marker-alt mr-1 text-green-600"></i>
                                 Alamat Wali (Opsional)
                             </label>
-                            <textarea name="wali_address" rows="2"
+                            <textarea name="wali_address" rows="2" :disabled="useExisting"
                                 class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring focus:ring-green-200 @error('wali_address') border-red-500 @enderror"
                                 placeholder="Sama dengan alamat santri atau berbeda">{{ old('wali_address') }}</textarea>
                             @error('wali_address')
@@ -313,18 +313,88 @@
     </div>
 @endsection
 
+@push('styles')
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <style>
+        /* Select2 Tailwind Integration */
+        .select2-container--default .select2-selection--single {
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            height: 42px;
+            display: flex;
+            align-items: center;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: #374151;
+            line-height: 42px;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 42px;
+            right: 12px;
+        }
+
+        .select2-container--default.select2-container--focus .select2-selection--single {
+            border-color: #22c55e;
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+        }
+
+        .select2-dropdown {
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .select2-results__option {
+            padding: 10px 12px;
+            color: #374151;
+        }
+
+        .select2-results__option--highlighted {
+            background-color: #22c55e !important;
+            color: white;
+        }
+
+        .select2-results__option--selected {
+            background-color: #f0fdf4;
+            color: #166534;
+        }
+
+        .select2-search__field {
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+    </style>
+@endpush
+
 @push('scripts')
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
     <script>
+        // Initialize Select2 on wali dropdown
+        $(document).ready(function() {
+            $('#wali-select').select2({
+                placeholder: 'Cari nama atau nomor HP wali...',
+                allowClear: true,
+                width: '100%'
+            });
+        });
+
         // Auto-format NIK (16 digits)
-        document.querySelector('input[name="wali_nik"]')?.addEventListener('input', function(e) {
-            this.value = this.value.replace(/\D/g, '').substring(0, 16);
+        document.addEventListener('input', function(e) {
+            if (e.target.name === 'wali_nik') {
+                e.target.value = e.target.value.replace(/\D/g, '').substring(0, 16);
+            }
         });
 
         // Auto-format phone numbers
-        document.querySelectorAll('input[type="tel"]').forEach(input => {
-            input.addEventListener('input', function(e) {
-                this.value = this.value.replace(/\D/g, '');
-            });
+        document.addEventListener('input', function(e) {
+            if (e.target.type === 'tel') {
+                e.target.value = e.target.value.replace(/\D/g, '');
+            }
         });
     </script>
 @endpush

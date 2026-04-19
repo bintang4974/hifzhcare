@@ -44,7 +44,8 @@ class UstadzController extends Controller
         $query = UstadzProfile::with(['user', 'activeClasses'])
             ->join('users', 'users.id', '=', 'ustadz_profiles.user_id')
             ->select('ustadz_profiles.*')
-            ->where('ustadz_profiles.pesantren_id', session('current_pesantren_id'));
+            ->where('ustadz_profiles.pesantren_id', session('current_pesantren_id'))
+            ->whereHas('user'); // Only show ustadz with existing (non-deleted) users
 
         // Filters
         if ($request->filled('status')) {
@@ -62,13 +63,13 @@ class UstadzController extends Controller
             ->orderColumn('nip', 'ustadz_profiles.nip $1')
             ->addIndexColumn()
             ->addColumn('name', function ($ustadz) {
-                return $ustadz->user->name;
+                return $ustadz->user?->name ?? '-';
             })
             ->addColumn('email', function ($ustadz) {
-                return $ustadz->user->email ?? '-';
+                return $ustadz->user?->email ?? '-';
             })
             ->addColumn('phone', function ($ustadz) {
-                return $ustadz->user->phone;
+                return $ustadz->user?->phone ?? '-';
             })
             ->addColumn('classes_count', function ($ustadz) {
                 return $ustadz->activeClasses->count();
@@ -95,8 +96,11 @@ class UstadzController extends Controller
                     ->count();
                 return $count;
             })
+            ->addColumn('status', function ($ustadz) {
+                return $ustadz->user?->status ?? 'unknown';
+            })
             ->addColumn('status_badge', function ($ustadz) {
-                $status = $ustadz->user->status;
+                $status = $ustadz->user?->status ?? 'unknown';
                 $badges = [
                     'active' => '<span class="px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800"><i class="fas fa-check-circle mr-1"></i>Aktif</span>',
                     'pending' => '<span class="px-3 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800"><i class="fas fa-clock mr-1"></i>Pending</span>',
@@ -124,7 +128,7 @@ class UstadzController extends Controller
                 }
 
                 // Activate button (if pending)
-                if ($ustadz->user->status === 'pending' && auth()->user()->can('activate_users')) {
+                if ($ustadz->user?->status === 'pending' && auth()->user()->can('activate_users')) {
                     $actions .= '<button onclick="activateUstadz(' . $ustadz->id . ')" 
                                   class="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition" 
                                   title="Aktivasi">
@@ -290,7 +294,8 @@ class UstadzController extends Controller
                 ], 400);
             }
 
-            $ustadz->user->delete();
+            $ustadz->user->delete(); // Soft delete user
+            $ustadz->delete(); // Also soft delete ustadz profile
 
             return response()->json([
                 'success' => true,
@@ -325,6 +330,30 @@ class UstadzController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal mengaktifkan akun: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Toggle ustadz status (active/inactive)
+     */
+    public function toggleStatus(UstadzProfile $ustadz)
+    {
+        try {
+            $this->authorize('edit_users');
+
+            $newStatus = $ustadz->user->status === 'active' ? 'inactive' : 'active';
+            $ustadz->user->update(['status' => $newStatus]);
+
+            return response()->json([
+                'success' => true,
+                'message' => "Ustadz berhasil diubah ke status " . ($newStatus === 'active' ? 'Aktif' : 'Tidak Aktif'),
+                'status' => $newStatus
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengubah status: ' . $e->getMessage()
             ], 500);
         }
     }
