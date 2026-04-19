@@ -27,13 +27,14 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     // Hafalan (already added)
     // Hafalan Routes
     Route::prefix('hafalan')->name('hafalan.')->group(function () {
-        // Resource routes (index, create, store, show, edit, update, destroy)
-        Route::resource('', HafalanController::class)->parameters(['' => 'hafalan']);
-
-        // Additional routes
+        // Additional routes (must be before resource routes)
+        Route::get('/classes/{classId}/santri', [HafalanController::class, 'getSantriByClass'])->name('get-santri-by-class');
         Route::post('/{hafalan}/verify', [HafalanController::class, 'verify'])->name('verify');
         Route::post('/{hafalan}/reject', [HafalanController::class, 'reject'])->name('reject');
         Route::get('/progress/{user?}', [HafalanController::class, 'progress'])->name('progress');
+        
+        // Resource routes (index, create, store, show, edit, update, destroy)
+        Route::resource('', HafalanController::class)->parameters(['' => 'hafalan']);
     });
     // Route::resource('hafalan', HafalanController::class);
 

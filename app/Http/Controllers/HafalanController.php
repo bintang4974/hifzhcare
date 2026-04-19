@@ -211,30 +211,66 @@ class HafalanController extends Controller
             abort(403, 'Santri tidak memiliki akses untuk menambahkan hafalan. Silakan minta ustadz untuk menambahkan hafalan Anda.');
         }
 
-        // Get users based on role
+        // For ustadz: classes and users will be loaded dynamically via AJAX
+        // For admin: show all classes and users
         if ($user->isUstadz()) {
-            // Ustadz can create for their class students
-            $users = User::whereHas('santriProfile.activeClasses.activeUstadz', function ($q) use ($user) {
-                $q->where('ustadz_profile_id', $user->ustadzProfile->id);
-            })->where('user_type', 'santri')
-                ->where('status', 'active')
+            // Ustadz can only create for their assigned classes
+            $classes = Classes::where('status', 'active')
+                ->whereHas('activeUstadz', function ($q) use ($user) {
+                    $q->where('ustadz_profile_id', $user->ustadzProfile->id);
+                })
                 ->orderBy('name')
                 ->get(['id', 'name']);
+            
+            // Empty users array - will be populated via AJAX after class selection
+            $users = collect();
         } else {
-            // Admin can create for all students
+            // Admin can create for all classes and students
+            $classes = Classes::where('status', 'active')
+                ->orderBy('name')
+                ->get(['id', 'name']);
+            
             $users = User::where('user_type', 'santri')
                 ->where('status', 'active')
                 ->orderBy('name')
                 ->get(['id', 'name']);
         }
 
-        $classes = Classes::where('status', 'active')
-            ->orderBy('name')
-            ->get(['id', 'name']);
-
         $surahs = QuranHelper::getAllSurahs();
 
         return view('hafalan.create', compact('users', 'classes', 'surahs'));
+    }
+
+    /**
+     * Get santri for a specific class (via AJAX)
+     */
+    public function getSantriByClass($classId)
+    {
+        $user = auth()->user();
+        $class = Classes::findOrFail($classId);
+
+        // For ustadz, verify they teach this class
+        if ($user->isUstadz()) {
+            $ustadzProfile = $user->ustadzProfile;
+            if (!$class->activeUstadz()->where('ustadz_profile_id', $ustadzProfile->id)->exists()) {
+                return response()->json(['error' => 'Anda tidak mengajar kelas ini'], 403);
+            }
+        }
+
+        // Get active santri in this class (only users with valid user records)
+        $santri = $class->activeSantri()
+            ->whereHas('user')
+            ->with('user')
+            ->get()
+            ->map(function ($santri) {
+                return [
+                    'id' => $santri->user->id,
+                    'name' => $santri->user->name,
+                ];
+            })
+            ->values();
+
+        return response()->json($santri);
     }
 
     /**
