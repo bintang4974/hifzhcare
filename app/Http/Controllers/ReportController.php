@@ -13,6 +13,11 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use App\Exports\SantriDataExport;
 use App\Exports\HafalanSummaryExport;
 use App\Exports\CertificateSummaryExport;
+use App\Exports\ProgressExport;
+use App\Exports\RankingExport;
+use App\Exports\ClassOverviewExport;
+use App\Exports\ClassPerformanceExport;
+use App\Exports\HafalanJuzExport;
 use Maatwebsite\Excel\Facades\Excel;
 
 class ReportController extends Controller
@@ -78,7 +83,7 @@ class ReportController extends Controller
         // Filters
         if ($request->filled('class_id')) {
             $query->whereHas('classes', function ($q) use ($request) {
-                $q->where('class_id', $request->class_id);
+                $q->where('classes.id', $request->class_id);
             });
         }
 
@@ -211,8 +216,10 @@ class ReportController extends Controller
 
     private function generateProgressExcel($santris)
     {
-        // TODO: Create ProgressExport class
-        return response()->json(['message' => 'Excel export for progress coming soon']);
+        return Excel::download(
+            new ProgressExport($santris),
+            'Laporan-Progress-Hafalan-' . date('Y-m-d') . '.xlsx'
+        );
     }
 
     /**
@@ -248,6 +255,11 @@ class ReportController extends Controller
             ->limit(20)
             ->get();
 
+        // Add progress percentage calculation
+        foreach ($topPerformers as $santri) {
+            $santri->progress_percentage = ($santri->total_juz_completed ?? 0) / 30 * 100;
+        }
+
         $pesantren = auth()->user()->pesantren;
 
         if ($validated['format'] === 'pdf') {
@@ -261,7 +273,10 @@ class ReportController extends Controller
         }
 
         // Excel format
-        return response()->json(['message' => 'Excel export coming soon']);
+        return Excel::download(
+            new RankingExport($topPerformers),
+            'Laporan-Ranking-' . date('Y-m-d') . '.xlsx'
+        );
     }
 
     /**
@@ -276,7 +291,7 @@ class ReportController extends Controller
         $pesantrenId = auth()->user()->pesantren_id;
 
         $classes = Classes::where('pesantren_id', $pesantrenId)
-            ->with(['ustadz.user', 'santriProfiles'])
+            ->with(['ustadzProfiles.user', 'santriProfiles'])
             ->withCount(['santriProfiles as total_santri'])
             ->get();
 
@@ -311,7 +326,11 @@ class ReportController extends Controller
             return $pdf->download('Laporan-Overview-Kelas-' . date('Y-m-d') . '.pdf');
         }
 
-        return response()->json(['message' => 'Excel export coming soon']);
+        // Excel format
+        return Excel::download(
+            new ClassOverviewExport($classes),
+            'Laporan-Overview-Kelas-' . date('Y-m-d') . '.xlsx'
+        );
     }
 
     /**
@@ -327,7 +346,7 @@ class ReportController extends Controller
         $pesantrenId = auth()->user()->pesantren_id;
 
         $query = Classes::where('pesantren_id', $pesantrenId)
-            ->with(['ustadz.user', 'santriProfiles.user']);
+            ->with(['ustadzProfiles.user', 'santriProfiles.user']);
 
         if ($request->filled('class_id')) {
             $query->where('id', $request->class_id);
@@ -381,7 +400,11 @@ class ReportController extends Controller
             return $pdf->download('Laporan-Performance-Kelas-' . date('Y-m-d') . '.pdf');
         }
 
-        return response()->json(['message' => 'Excel export coming soon']);
+        // Excel format
+        return Excel::download(
+            new ClassPerformanceExport($classes),
+            'Laporan-Performance-Kelas-' . date('Y-m-d') . '.xlsx'
+        );
     }
 
     /**
@@ -474,29 +497,43 @@ class ReportController extends Controller
 
         $pesantrenId = auth()->user()->pesantren_id;
 
-        // Get hafalan grouped by juz (simplified - you'd calculate actual juz from surah)
+        // Initialize juz stats for all 30 juz
         $juzStats = [];
         for ($juz = 1; $juz <= 30; $juz++) {
             $juzStats[$juz] = [
                 'total_hafalan' => 0,
                 'total_santri' => 0,
+                'santri_completed' => 0,
                 'completion_rate' => 0,
-                'avg_time' => 0,
             ];
         }
 
-        // Get certificates per juz
-        $certificatesPerJuz = Certificate::where('pesantren_id', $pesantrenId)
-            ->where('certificate_type', 'per_juz')
-            ->selectRaw('juz_number, COUNT(*) as count')
+        // Get total santri per juz who attempted hafalan
+        $totalSantriPerJuz = Hafalan::where('pesantren_id', $pesantrenId)
+            ->selectRaw('juz_number, COUNT(DISTINCT user_id) as total_santri, COUNT(*) as total_hafalan')
             ->groupBy('juz_number')
-            ->pluck('count', 'juz_number');
+            ->get();
 
-        foreach ($certificatesPerJuz as $juz => $count) {
-            if (isset($juzStats[$juz])) {
-                $juzStats[$juz]['total_santri'] = $count;
-                $juzStats[$juz]['completion_rate'] = 100; // Simplified
-            }
+        // Get santri who completed (have certificate) per juz
+        $completedSantriPerJuz = Certificate::where('pesantren_id', $pesantrenId)
+            ->where('type', 'santri_juz')
+            ->selectRaw('juz_completed, COUNT(DISTINCT user_id) as santri_completed')
+            ->groupBy('juz_completed')
+            ->pluck('santri_completed', 'juz_completed');
+
+        // Fill juz stats with accurate data
+        foreach ($totalSantriPerJuz as $juzData) {
+            $juz = $juzData->juz_number;
+            $totalSantri = $juzData->total_santri;
+            $completedSantri = $completedSantriPerJuz[$juz] ?? 0;
+            $completionRate = $totalSantri > 0 ? ($completedSantri / $totalSantri) * 100 : 0;
+
+            $juzStats[$juz] = [
+                'total_hafalan' => $juzData->total_hafalan,
+                'total_santri' => $totalSantri,
+                'santri_completed' => $completedSantri,
+                'completion_rate' => $completionRate,
+            ];
         }
 
         $pesantren = auth()->user()->pesantren;
@@ -511,7 +548,10 @@ class ReportController extends Controller
             return $pdf->download('Laporan-Hafalan-Per-Juz-' . date('Y-m-d') . '.pdf');
         }
 
-        return response()->json(['message' => 'Excel export coming soon']);
+        return Excel::download(
+            new HafalanJuzExport($juzStats),
+            'Laporan-Hafalan-Per-Juz-' . date('Y-m-d') . '.xlsx'
+        );
     }
 
     /**
@@ -529,11 +569,11 @@ class ReportController extends Controller
         $pesantrenId = auth()->user()->pesantren_id;
 
         $query = Certificate::where('pesantren_id', $pesantrenId)
-            ->with(['santri.user', 'santri.classes']);
+            ->with(['user', 'santri.classes']);
 
         if ($request->filled('class_id')) {
-            $query->whereHas('santri', function ($q) use ($request) {
-                $q->where('class_id', $request->class_id);
+            $query->whereHas('santri.classes', function ($q) use ($request) {
+                $q->where('classes.id', $request->class_id);
             });
         }
 
@@ -547,15 +587,48 @@ class ReportController extends Controller
 
         $certificates = $query->orderByDesc('issued_at')->get();
 
+        // Get santri who completed 30 juz (khatam) - create virtual certificates for them
+        $khatamQuery = SantriProfile::where('pesantren_id', $pesantrenId)
+            ->where('total_juz_completed', '>=', 30)
+            ->with('user', 'classes');
+
+        // Apply date filters to khatam santri
+        if ($request->filled('start_date')) {
+            $khatamQuery->whereDate('updated_at', '>=', $request->start_date);
+        }
+
+        if ($request->filled('end_date')) {
+            $khatamQuery->whereDate('updated_at', '<=', $request->end_date);
+        }
+
+        $khatamSantri = $khatamQuery->get();
+
+        // Create virtual khatam certificates for display
+        $khatamCertificates = $khatamSantri->map(function ($santri) use ($pesantrenId) {
+            $cert = new Certificate();
+            $cert->pesantren_id = $pesantrenId;
+            $cert->user_id = $santri->user_id;
+            $cert->type = 'khatam';
+            $cert->juz_completed = 30;
+            $cert->certificate_number = 'KHATAM-' . $santri->user_id;
+            $cert->issued_at = $santri->updated_at ?? now();
+            $cert->santri = $santri;
+            return $cert;
+        });
+
+        // Merge khatam certificates with existing certificates using concat
+        $allCertificates = $certificates->concat($khatamCertificates)->sortByDesc('issued_at')->values();
+
         // Statistics
         $stats = [
-            'total' => $certificates->count(),
-            'per_juz' => $certificates->where('type', 'santri_juz')->count(),
-            'general' => $certificates->whereIn('type', ['general_achievement', 'general_consistency'])->count(),
+            'total' => $allCertificates->count(),
+            'per_juz' => $allCertificates->where('type', 'santri_juz')->count(),
+            'khatam' => $allCertificates->where('type', 'khatam')->count(),
+            'general' => $allCertificates->whereIn('type', ['general_achievement', 'general_consistency'])->count(),
         ];
 
         // Monthly distribution
-        $monthlyDistribution = $certificates->groupBy(function ($cert) {
+        $monthlyDistribution = $allCertificates->groupBy(function ($cert) {
             return $cert->issued_at?->format('Y-m') ?? 'Not Issued';
         })->map->count();
 
@@ -563,7 +636,7 @@ class ReportController extends Controller
 
         if ($validated['format'] === 'pdf') {
             $pdf = Pdf::loadView('reports.pdf.certificate-summary', [
-                'certificates' => $certificates,
+                'certificates' => $allCertificates,
                 'stats' => $stats,
                 'monthlyDistribution' => $monthlyDistribution,
                 'pesantren' => $pesantren,
@@ -574,7 +647,7 @@ class ReportController extends Controller
         }
 
         return Excel::download(
-            new CertificateSummaryExport($certificates, $stats),
+            new CertificateSummaryExport($allCertificates, $stats),
             'Laporan-Sertifikat-' . date('Y-m-d') . '.xlsx'
         );
     }

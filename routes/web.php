@@ -56,18 +56,18 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
         // List & Stats
         Route::get('/', [CertificateController::class, 'index'])->name('index');
 
-        // Show Certificate
+        // Manual Generate (Admin only) - MUST BE BEFORE {certificate} parameter route
+        Route::middleware(['can:manage_users'])->group(function () {
+            Route::get('/generate', [CertificateController::class, 'generateForm'])->name('generate');
+            Route::post('/generate', [CertificateController::class, 'storeManual'])->name('storeManual');
+        });
+
+        // Show Certificate (parameter route - must be AFTER specific routes)
         Route::get('/{certificate}', [CertificateController::class, 'show'])->name('show');
 
         // Download & Print
         Route::get('/{certificate}/download', [CertificateController::class, 'download'])->name('download');
         Route::get('/{certificate}/print', [CertificateController::class, 'print'])->name('print');
-
-        // Manual Generate (Admin only)
-        Route::middleware(['can:manage_users'])->group(function () {
-            Route::get('/generate', [CertificateController::class, 'generateForm'])->name('generate');
-            Route::post('/generate', [CertificateController::class, 'storeManual'])->name('storeManual');
-        });
     });
 
     // Classes

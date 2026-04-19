@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Certificate;
+use App\Models\CertificateTemplate;
 use App\Models\Classes;
 use App\Models\HafalanAudio;
 use App\Models\SantriProfile;
@@ -199,7 +200,6 @@ class CertificateController extends Controller
     {
         $santris = SantriProfile::where('pesantren_id', auth()->user()->pesantren_id)
             ->with('user')
-            ->where('status', 'active')
             ->orderBy('nis')
             ->get();
 
@@ -223,7 +223,7 @@ class CertificateController extends Controller
 
         // Check if certificate already exists (map form values to DB columns)
         if ($validated['certificate_type'] === 'per_juz') {
-            $exists = Certificate::where('santri_id', $santri->id)
+            $exists = Certificate::where('user_id', $santri->user_id)
                 ->where('type', 'santri_juz')
                 ->where('juz_completed', $validated['juz_number'])
                 ->exists();
@@ -241,13 +241,19 @@ class CertificateController extends Controller
 
         // Create certificate (store according to migration: 'type' and 'juz_completed')
         $data = [
-            'santri_id' => $santri->id,
+            'user_id' => $santri->user_id,
             'pesantren_id' => $santri->pesantren_id,
+            'certificate_template_id' => CertificateTemplate::where('pesantren_id', $santri->pesantren_id)
+                ->where('type', 'santri_juz')
+                ->where('status', 'active')
+                ->first()
+                ?->id,
             'certificate_number' => $certificateNumber,
             'issued_at' => $validated['issue_date'],
             'notes' => $validated['notes'],
             'type' => $validated['certificate_type'] === 'per_juz' ? 'santri_juz' : 'santri_juz',
             'juz_completed' => $validated['certificate_type'] === 'per_juz' ? $validated['juz_number'] ?? null : ($validated['certificate_type'] === 'khatam' ? 30 : null),
+            'status' => 'issued',
         ];
 
         Certificate::create($data);
