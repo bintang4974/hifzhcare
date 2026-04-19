@@ -36,11 +36,11 @@ class CreateSantriRequest extends FormRequest
 
             // Wali data (optional - will check for existing)
             'wali_id' => ['nullable', 'exists:wali_profiles,id'],
-            'wali_name' => ['required_without:wali_id', 'string', 'max:255'],
+            'wali_name' => ['required_if:wali_id,', 'nullable', 'string', 'max:255'],
             'wali_email' => ['nullable', 'email'],
-            'wali_phone' => ['required_without:wali_id', 'string', 'max:20'],
+            'wali_phone' => ['required_if:wali_id,', 'nullable', 'string', 'max:20'],
             'wali_nik' => ['nullable', 'string', 'max:16'],
-            'wali_relation' => ['required_without:wali_id', 'in:ayah,ibu,wali'],
+            'wali_relation' => ['required_if:wali_id,', 'nullable', 'in:ayah,ibu,wali'],
             'wali_occupation' => ['nullable', 'string', 'max:255'],
             'wali_address' => ['nullable', 'string', 'max:500'],
         ];
@@ -63,8 +63,11 @@ class CreateSantriRequest extends FormRequest
             'address.required' => 'Alamat harus diisi.',
             'entry_date.required' => 'Tanggal masuk harus diisi.',
             'wali_name.required_without' => 'Nama wali harus diisi jika tidak memilih wali yang ada.',
+            'wali_name.required_if' => 'Nama wali harus diisi jika tidak memilih wali yang ada.',
             'wali_phone.required_without' => 'Nomor telepon wali harus diisi.',
+            'wali_phone.required_if' => 'Nomor telepon wali harus diisi.',
             'wali_relation.required_without' => 'Hubungan wali harus dipilih.',
+            'wali_relation.required_if' => 'Hubungan wali harus dipilih.',
         ];
     }
 

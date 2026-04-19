@@ -65,6 +65,7 @@ class StakeholderDashboardController extends Controller
 
         // Recent Certificates
         $recentCertificates = Certificate::where('pesantren_id', $pesantrenId)
+            ->whereHas('user')
             ->with(['user', 'pesantren'])
             ->latest()
             ->take(5)
@@ -182,6 +183,7 @@ class StakeholderDashboardController extends Controller
     protected function getTopPerformers($pesantrenId)
     {
         return SantriProfile::where('pesantren_id', $pesantrenId)
+            ->whereHas('user')
             ->with(['user'])
             ->withCount(['hafalans as verified_hafalans' => function ($q) {
                 $q->where('status', 'verified');
@@ -284,6 +286,7 @@ class StakeholderDashboardController extends Controller
     protected function getStudentsNeedingAttention($pesantrenId)
     {
         return SantriProfile::where('pesantren_id', $pesantrenId)
+            ->whereHas('user')
             ->with(['user'])
             ->where(function ($q) {
                 // Low progress (less than 20% = less than 6 juz) OR no recent activity

@@ -75,17 +75,7 @@ class ClassController extends Controller
                     : '<span class="text-gray-400">Belum ada ustadz</span>';
             })
             ->addColumn('capacity', function ($class) {
-                $percentage = $class->max_capacity > 0
-                    ? round(($class->current_student_count / $class->max_capacity) * 100)
-                    : 0;
-                $color = $percentage >= 90 ? 'rgb(239, 68, 68)' : ($percentage >= 70 ? 'rgb(234, 179, 8)' : 'rgb(34, 197, 94)');
-
-                return "<div class='flex items-center gap-2'>
-                            <div class='flex-1 bg-gray-200 rounded-full h-2 w-24'>
-                                <div class='h-2 rounded-full' style='width: {$percentage}%; background-color: {$color}'></div>
-                            </div>
-                            <span class='text-xs text-gray-600'>{$class->current_student_count}/{$class->max_capacity}</span>
-                        </div>";
+                return $class->current_student_count . '/' . $class->max_capacity;
             })
             ->addColumn('status_badge', function ($class) {
                 return $class->status === 'active'
@@ -129,7 +119,7 @@ class ClassController extends Controller
 
                 return $actions;
             })
-            ->rawColumns(['ustadz', 'capacity', 'status_badge', 'action'])
+            ->rawColumns(['ustadz', 'status_badge', 'action'])
             ->make(true);
     }
 
@@ -267,15 +257,17 @@ class ClassController extends Controller
     {
         $class->load(['activeUstadz.user', 'activeSantri.user']);
 
-        // Get available ustadz (not assigned to this class)
-        $availableUstadz = UstadzProfile::whereDoesntHave('activeClasses', function ($q) use ($class) {
-            $q->where('class_id', $class->id);
-        })->with('user')->get();
+        // Get available ustadz (not assigned to this class at all)
+        $assignedUstadzIds = $class->ustadzProfiles()->pluck('ustadz_profile_id')->toArray();
+        $availableUstadz = UstadzProfile::whereHas('user')
+            ->whereNotIn('id', $assignedUstadzIds)
+            ->with('user')->get();
 
-        // Get available santri (not enrolled in this class)
-        $availableSantri = SantriProfile::whereDoesntHave('activeClasses', function ($q) use ($class) {
-            $q->where('class_id', $class->id);
-        })->with('user')
+        // Get available santri (not enrolled in this class at all)
+        $enrolledSantriIds = $class->santriProfiles()->pluck('santri_profile_id')->toArray();
+        $availableSantri = SantriProfile::whereHas('user')
+            ->whereNotIn('id', $enrolledSantriIds)
+            ->with('user')
             ->whereHas('user', function ($q) {
                 $q->where('status', 'active');
             })->get();
@@ -291,15 +283,13 @@ class ClassController extends Controller
         try {
             $this->classService->assignUstadz($class->id, $request->ustadz_profile_id);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Ustadz berhasil ditugaskan ke kelas.'
-            ]);
+            return redirect()
+                ->route('classes.members', $class->id)
+                ->with('success', 'Ustadz berhasil ditugaskan ke kelas.');
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal menugaskan ustadz: ' . $e->getMessage()
-            ], 500);
+            return redirect()
+                ->route('classes.members', $class->id)
+                ->with('error', 'Gagal menugaskan ustadz: ' . $e->getMessage());
         }
     }
 
@@ -331,15 +321,13 @@ class ClassController extends Controller
         try {
             $this->classService->enrollSantri($class->id, $request->santri_profile_id);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Santri berhasil didaftarkan ke kelas.'
-            ]);
+            return redirect()
+                ->route('classes.members', $class->id)
+                ->with('success', 'Santri berhasil didaftarkan ke kelas.');
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal mendaftarkan santri: ' . $e->getMessage()
-            ], 500);
+            return redirect()
+                ->route('classes.members', $class->id)
+                ->with('error', 'Gagal mendaftarkan santri: ' . $e->getMessage());
         }
     }
 

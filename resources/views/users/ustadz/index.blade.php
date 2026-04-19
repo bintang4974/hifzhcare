@@ -787,6 +787,15 @@
             border-color: #bbf7d0;
         }
 
+        .action-btn.toggle {
+            color: #0ea5e9;
+        }
+
+        .action-btn.toggle:hover {
+            background: #f0f9ff;
+            border-color: #bae6fd;
+        }
+
         .action-btn.del {
             color: #dc2626;
         }
@@ -1313,6 +1322,15 @@
                                 <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
                             </svg>
                         </a>`;
+
+                                // Toggle status button
+                                const toggleIcon = status === 'active' 
+                                    ? `<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>`
+                                    : `<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>`;
+                                const toggleTitle = status === 'active' ? 'Nonaktifkan' : 'Aktifkan';
+                                html += `<button class="action-btn toggle" onclick="toggleUstadzStatus(${d})" title="${toggleTitle}">
+                            ${toggleIcon}
+                        </button>`;
                             }
 
                             if (status === 'pending') {
@@ -1465,6 +1483,27 @@
                 }
             });
         });
+
+        // =====================
+        // Toggle Status
+        // =====================
+        window.toggleUstadzStatus = function(id) {
+            $.ajax({
+                url: `/users/ustadz/${id}/toggle-status`,
+                method: 'PATCH',
+                data: {
+                    _token: '{{ csrf_token() }}'
+                },
+                success: function(response) {
+                    table.ajax.reload(null, false);
+                    updateStats();
+                    showToast(response.message || 'Status berhasil diubah', 'success');
+                },
+                error: function(xhr) {
+                    showToast(xhr.responseJSON?.message || 'Terjadi kesalahan', 'error');
+                }
+            });
+        };
 
         // =====================
         // Delete

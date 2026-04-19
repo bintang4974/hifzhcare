@@ -39,7 +39,8 @@ class SantriController extends Controller
     protected function datatable(Request $request)
     {
         $query = SantriProfile::with(['user', 'wali.user', 'activeClasses'])
-            ->select('santri_profiles.*');
+            ->select('santri_profiles.*')
+            ->whereHas('user'); // Only show santri with existing (non-deleted) users
 
         // Filter by class
         if ($request->filled('class_id')) {
@@ -62,11 +63,11 @@ class SantriController extends Controller
 
         return DataTables::eloquent($query)
             ->addIndexColumn()
-            ->addColumn('name', fn($santri) => $santri->user->name)
+            ->addColumn('name', fn($santri) => $santri->user?->name ?? '-')
             ->addColumn('nis', fn($santri) => $santri->nis)
             ->addColumn('gender_label', fn($santri) => $santri->gender === 'L' ? 'Laki-laki' : 'Perempuan')
             ->addColumn('age', fn($santri) => $santri->age . ' tahun')
-            ->addColumn('wali_name', fn($santri) => $santri->wali?->user->name ?? '-')
+            ->addColumn('wali_name', fn($santri) => $santri->wali?->user?->name ?? '-')
             ->addColumn('classes', function ($santri) {
                 return $santri->activeClasses->pluck('name')->join(', ') ?: '-';
             })
@@ -81,12 +82,13 @@ class SantriController extends Controller
                         </div>";
             })
             ->addColumn('status_badge', function ($santri) {
-                return match ($santri->user->status) {
+                $status = $santri->user?->status ?? 'unknown';
+                return match ($status) {
                     'active' => '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Aktif</span>',
                     'pending' => '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Pending</span>',
                     'inactive' => '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">Tidak Aktif</span>',
                     'graduated' => '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Lulus</span>',
-                    default => '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">' . $santri->user->status . '</span>',
+                    default => '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">' . $status . '</span>',
                 };
             })
             ->addColumn('action', function ($santri) {
@@ -109,7 +111,7 @@ class SantriController extends Controller
                 }
 
                 // Activate button (if pending)
-                if ($santri->user->status === 'pending' && auth()->user()->can('activate_users')) {
+                if ($santri->user?->status === 'pending' && auth()->user()->can('activate_users')) {
                     $actions .= '<button onclick="activateSantri(' . $santri->id . ')" 
                                    class="text-green-600 hover:text-green-900 mr-2" 
                                    title="Aktivasi">
@@ -264,7 +266,8 @@ class SantriController extends Controller
     public function destroy(SantriProfile $santri)
     {
         try {
-            $santri->user->delete(); // Soft delete
+            $santri->user->delete(); // Soft delete user
+            $santri->delete(); // Also soft delete santri profile
 
             return response()->json([
                 'success' => true,

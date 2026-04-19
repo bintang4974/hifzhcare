@@ -125,13 +125,27 @@ class Classes extends Model
      */
     public function assignUstadz(UstadzProfile $ustadz, ?string $assignedDate = null): void
     {
-        $this->ustadzProfiles()->attach($ustadz->id, [
-            'pesantren_id' => $this->pesantren_id,
-            'assigned_date' => $assignedDate ?? now(),
-            'status' => 'active',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        // Check if ustadz is already assigned to this class
+        $pivot = $this->ustadzProfiles()
+            ->where('ustadz_profile_id', $ustadz->id)
+            ->first();
+
+        if ($pivot) {
+            // If already assigned, just update status to active
+            $this->ustadzProfiles()->updateExistingPivot($ustadz->id, [
+                'status' => 'active',
+                'updated_at' => now(),
+            ]);
+        } else {
+            // Otherwise, attach as a new assignment
+            $this->ustadzProfiles()->attach($ustadz->id, [
+                'pesantren_id' => $this->pesantren_id,
+                'assigned_date' => $assignedDate ?? now(),
+                'status' => 'active',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
     }
 
     /**
@@ -151,15 +165,29 @@ class Classes extends Model
             throw new \Exception('Kelas sudah penuh. Tidak dapat menambah santri.');
         }
 
-        $this->santriProfiles()->attach($santri->id, [
-            'pesantren_id' => $this->pesantren_id,
-            'enrolled_date' => $enrolledDate ?? now(),
-            'status' => 'active',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        // Check if santri is already enrolled in this class
+        $pivot = $this->santriProfiles()
+            ->where('santri_profile_id', $santri->id)
+            ->first();
 
-        $this->increment('current_student_count');
+        if ($pivot) {
+            // If already enrolled, just update status to active
+            $this->santriProfiles()->updateExistingPivot($santri->id, [
+                'status' => 'active',
+                'updated_at' => now(),
+            ]);
+        } else {
+            // Otherwise, attach as a new enrollment
+            $this->santriProfiles()->attach($santri->id, [
+                'pesantren_id' => $this->pesantren_id,
+                'enrolled_date' => $enrolledDate ?? now(),
+                'status' => 'active',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $this->increment('current_student_count');
+        }
     }
 
     /**

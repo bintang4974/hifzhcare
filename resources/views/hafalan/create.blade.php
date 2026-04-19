@@ -15,25 +15,6 @@
             <form action="{{ route('hafalan.store') }}" method="POST" enctype="multipart/form-data" id="hafalan-form">
                 @csrf
 
-                <!-- Santri Selection -->
-                <div class="mb-6">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Santri <span class="text-red-500">*</span>
-                    </label>
-                    <select name="user_id" id="user-select" required
-                        class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 @error('user_id') border-red-500 @enderror">
-                        <option value="">Pilih Santri</option>
-                        @foreach ($users as $user)
-                            <option value="{{ $user->id }}" {{ old('user_id') == $user->id ? 'selected' : '' }}>
-                                {{ $user->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('user_id')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
                 <!-- Class Selection -->
                 <div class="mb-6">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Kelas</label>
@@ -41,12 +22,43 @@
                         class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 @error('class_id') border-red-500 @enderror">
                         <option value="">Pilih Kelas</option>
                         @foreach ($classes as $class)
-                            <option value="{{ $class->id }}" {{ old('class_id') == $class->id ? 'selected' : '' }}>
+                            <option value="{{ $class->id }}" 
+                                @if(old('class_id') == $class->id) selected 
+                                @elseif(request('class_id') == $class->id) selected 
+                                @endif>
                                 {{ $class->name }}
                             </option>
                         @endforeach
                     </select>
                     @error('class_id')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Santri Selection -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Santri <span class="text-red-500">*</span>
+                    </label>
+                    <select name="user_id" id="user-select" required
+                        class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 @error('user_id') border-red-500 @enderror"
+                        @if(auth()->user()->isUstadz() && !request('class_id')) disabled @endif>
+                        @if(auth()->user()->isUstadz())
+                            @if(request('class_id'))
+                                <option value="">Memuat santri...</option>
+                            @else
+                                <option value="">Pilih Kelas Terlebih Dahulu</option>
+                            @endif
+                        @else
+                            <option value="">Pilih Santri</option>
+                            @foreach ($users as $user)
+                                <option value="{{ $user->id }}" {{ old('user_id') == $user->id ? 'selected' : '' }}>
+                                    {{ $user->name }}
+                                </option>
+                            @endforeach
+                        @endif
+                    </select>
+                    @error('user_id')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
@@ -223,6 +235,7 @@
 @endsection
 
 @push('scripts')
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script>
         // Audio Recording Variables
         let mediaRecorder;
@@ -236,22 +249,106 @@
             const startInput = document.getElementById('ayat-start');
             const endInput = document.getElementById('ayat-end');
             const countDisplay = document.getElementById('ayat-count');
-            
+
             if (!startInput || !endInput || !countDisplay) {
-                console.error('Elements not found', {startInput, endInput, countDisplay});
+                console.error('Elements not found', {
+                    startInput,
+                    endInput,
+                    countDisplay
+                });
                 return;
             }
-            
+
             const start = parseInt(startInput.value) || 1;
             const end = parseInt(endInput.value) || 1;
             const count = Math.max(0, end - start + 1);
-            
-            console.log('updateAyatCount:', { start, end, count });
+
+            console.log('updateAyatCount:', {
+                start,
+                end,
+                count
+            });
             countDisplay.textContent = count;
         }
 
         $(document).ready(function() {
             console.log('Document ready - initializing form');
+
+            // Function to load santri for a class
+            function loadSantriForClass(classId, selectUserId = null) {
+                const userSelect = $('#user-select');
+
+                if (!classId) {
+                    // If no class selected, disable santri dropdown
+                    userSelect.html('<option value="">Pilih Kelas Terlebih Dahulu</option>');
+                    userSelect.prop('disabled', true);
+                    return;
+                }
+
+                // Enable the dropdown and show loading state
+                userSelect.prop('disabled', false);
+                userSelect.html('<option value="">Memuat santri...</option>');
+
+                // Load santri for selected class via AJAX
+                $.ajax({
+                    url: '/hafalan/classes/' + classId + '/santri',
+                    type: 'GET',
+                    dataType: 'json',
+                    timeout: 5000,
+                    success: function(data) {
+                        console.log('Santri loaded successfully for class', classId, ':', data);
+                        let html = '<option value="">Pilih Santri</option>';
+                        
+                        if (data.length === 0) {
+                            html = '<option value="">Tidak ada santri di kelas ini</option>';
+                            userSelect.prop('disabled', true);
+                        } else {
+                            $.each(data, function(index, santri) {
+                                html += '<option value="' + santri.id + '">' + santri.name + '</option>';
+                            });
+                            userSelect.prop('disabled', false);
+                        }
+                        
+                        userSelect.html(html);
+                        
+                        // Pre-select santri if selectUserId is provided
+                        if (selectUserId) {
+                            console.log('Pre-selecting santri:', selectUserId);
+                            userSelect.val(selectUserId);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error loading santri:', status, error, xhr);
+                        userSelect.html('<option value="">Error - Coba Lagi</option>');
+                        userSelect.prop('disabled', true);
+                        alert('Gagal memuat daftar santri: ' + (xhr.responseJSON?.error || error));
+                    }
+                });
+            }
+
+            // Handle class selection to load santri dynamically
+            $('#class-select').on('change', function() {
+                const classId = $(this).val();
+                loadSantriForClass(classId);
+            });
+
+            // On page load: if a class is already selected (from form submission or query param), load its santri
+            const initialClassId = $('#class-select').val();
+            const queryUserId = '{{ request("user_id") }}';
+            
+            if (initialClassId) {
+                console.log('Page loaded with class selected:', initialClassId);
+                // If user_id is also in query params, pass it to pre-select
+                if (queryUserId) {
+                    console.log('Pre-selecting user from query param:', queryUserId);
+                    loadSantriForClass(initialClassId, queryUserId);
+                } else {
+                    loadSantriForClass(initialClassId);
+                }
+            } else {
+                // Initialize: If no class is selected, disable santri dropdown
+                $('#user-select').prop('disabled', true);
+            }
 
             // Update max ayat based on surah
             $('#surah-select').on('change', function() {
@@ -271,7 +368,7 @@
                 ayatInputs.addEventListener('change', updateAyatCount);
                 ayatInputs.addEventListener('keyup', updateAyatCount);
             }
-            
+
             const ayatEndInput = document.getElementById('ayat-end');
             if (ayatEndInput) {
                 ayatEndInput.addEventListener('input', updateAyatCount);

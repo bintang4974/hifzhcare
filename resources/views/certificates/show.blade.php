@@ -311,7 +311,7 @@
                 </div>
                 <div>
                     <span>Kelas</span>
-                    <strong>{{ $certificate->santri->classModel->name ?? '-' }}</strong>
+                    <strong>{{ $certificate->santri->firstActiveClass()?->name ?? '-' }}</strong>
                 </div>
                 <div>
                     <span>Tanggal</span>
@@ -329,7 +329,7 @@
 
                 <div class="signature-block">
                     <div class="signature-line"></div>
-                    <div class="signature-name">{{ $certificate->santri->classModel->ustadz->user->name ?? 'Ustadz' }}
+                    <div class="signature-name">{{ $certificate->santri->firstActiveClass()?->ustadz->user->name ?? 'Ustadz' }}
                     </div>
                     <div class="signature-title">Ustadz Pembimbing</div>
                 </div>

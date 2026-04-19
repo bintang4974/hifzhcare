@@ -14,6 +14,24 @@
             </a>
         </div>
 
+        @if ($message = Session::get('success'))
+            <div class="p-4 bg-green-50 border border-green-200 rounded-lg flex items-start">
+                <i class="fas fa-check-circle text-green-600 mr-3 mt-1"></i>
+                <div>
+                    <p class="font-semibold text-green-800">{{ $message }}</p>
+                </div>
+            </div>
+        @endif
+
+        @if ($message = Session::get('error'))
+            <div class="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start">
+                <i class="fas fa-exclamation-circle text-red-600 mr-3 mt-1"></i>
+                <div>
+                    <p class="font-semibold text-red-800">{{ $message }}</p>
+                </div>
+            </div>
+        @endif
+
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Manage Ustadz -->
             <div class="bg-white rounded-xl shadow-lg p-6">
@@ -30,7 +48,7 @@
                         <div class="flex gap-3">
                             <select name="ustadz_profile_id" class="flex-1 rounded-lg border-gray-300 focus:border-blue-500">
                                 @forelse($availableUstadz as $ustadz)
-                                    <option value="{{ $ustadz->id }}">{{ $ustadz->user->name }} ({{ $ustadz->nip }})</option>
+                                    <option value="{{ $ustadz->id }}">{{ $ustadz->user?->name ?? 'N/A' }} ({{ $ustadz->nip }})</option>
                                 @empty
                                     <option value="">Tidak ada ustadz tersedia</option>
                                 @endforelse
@@ -48,7 +66,7 @@
                     @forelse($class->activeUstadz as $ustadz)
                         <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                             <div>
-                                <p class="font-semibold text-gray-900">{{ $ustadz->user->name }}</p>
+                                <p class="font-semibold text-gray-900">{{ $ustadz->user?->name ?? 'N/A' }}</p>
                                 <p class="text-xs text-gray-600">{{ $ustadz->nip }}</p>
                             </div>
                             @can('assign_ustadz')
@@ -78,7 +96,7 @@
                         <div class="flex gap-3">
                             <select name="santri_profile_id" class="flex-1 rounded-lg border-gray-300 focus:border-green-500">
                                 @forelse($availableSantri as $santri)
-                                    <option value="{{ $santri->id }}">{{ $santri->user->name }} ({{ $santri->nis }})
+                                    <option value="{{ $santri->id }}">{{ $santri->user?->name ?? 'N/A' }} ({{ $santri->nis }})
                                     </option>
                                 @empty
                                     <option value="">Tidak ada santri tersedia</option>
@@ -97,7 +115,7 @@
                     @forelse($class->activeSantri as $santri)
                         <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                             <div class="flex-1">
-                                <p class="font-semibold text-gray-900">{{ $santri->user->name }}</p>
+                                <p class="font-semibold text-gray-900">{{ $santri->user?->name ?? 'N/A' }}</p>
                                 <p class="text-xs text-gray-600">{{ $santri->nis }}</p>
                             </div>
                             @can('enroll_santri')

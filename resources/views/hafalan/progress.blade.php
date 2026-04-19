@@ -268,11 +268,15 @@
                         </div>
                         <div class="grid grid-cols-7 gap-1">
                             @foreach ($calendar as $date)
-                                <div
-                                    class="aspect-square flex items-center justify-center text-xs rounded-lg
-                                    {{ $date['has_activity'] ? 'bg-green-500 text-white font-bold' : ($date['is_today'] ? 'bg-blue-500 text-white font-bold' : 'bg-gray-100 text-gray-600') }}">
-                                    {{ $date['day'] }}
-                                </div>
+                                @if($date['day'] === '')
+                                    <div class="aspect-square rounded-lg bg-transparent"></div>
+                                @else
+                                    <div
+                                        class="aspect-square flex items-center justify-center text-xs rounded-lg
+                                        {{ $date['has_activity'] ? 'bg-green-500 text-white font-bold' : ($date['is_today'] ? 'bg-blue-500 text-white font-bold' : 'bg-gray-100 text-gray-600') }}">
+                                        {{ $date['day'] }}
+                                    </div>
+                                @endif
                             @endforeach
                         </div>
                     </div>

@@ -241,7 +241,7 @@
                     <td style="text-align: center;">{{ $index + 1 }}</td>
                     <td>{{ $santri->nis }}</td>
                     <td><strong>{{ $santri->user->name }}</strong></td>
-                    <td>{{ $santri->classModel->name ?? '-' }}</td>
+                    <td>{{ $santri->firstActiveClass()?->name ?? '-' }}</td>
                     <td>
                         @if ($santri->status === 'active')
                             <span class="badge badge-active">Aktif</span>

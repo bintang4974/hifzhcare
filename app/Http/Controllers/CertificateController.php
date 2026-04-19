@@ -23,13 +23,17 @@ class CertificateController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Certificate::with(['santri.user', 'santri.classModel'])
+        $query = Certificate::with(['user', 'santri'])
             ->where('pesantren_id', auth()->user()->pesantren_id);
 
         // Filter by type (translate UI values to DB columns)
         if ($request->filled('type')) {
             if ($request->type === 'per_juz') {
-                $query->where('type', 'santri_juz');
+                $query->where('type', 'santri_juz')
+                    ->where(function ($q) {
+                        $q->where('juz_completed', '<', 30)
+                            ->orWhereNull('juz_completed');
+                    });
             } elseif ($request->type === 'khatam') {
                 $query->where('type', 'santri_juz')
                     ->where('juz_completed', '>=', 30);
@@ -40,18 +44,17 @@ class CertificateController extends Controller
 
         // Filter by class
         if ($request->filled('class_id')) {
-            $query->whereHas('santri', function ($q) use ($request) {
-                $q->where('class_id', $request->class_id);
+            $query->whereHas('santri.activeClasses', function ($q) use ($request) {
+                $q->where('classes.id', $request->class_id);
             });
         }
 
         // Search by name or NIS
         if ($request->filled('search')) {
-            $query->whereHas('santri', function ($q) use ($request) {
-                $q->where('nis', 'like', '%' . $request->search . '%')
-                    ->orWhereHas('user', function ($q2) use ($request) {
-                        $q2->where('name', 'like', '%' . $request->search . '%');
-                    });
+            $query->whereHas('user', function ($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->search . '%');
+            })->orWhereHas('santri', function ($q) use ($request) {
+                $q->where('nis', 'like', '%' . $request->search . '%');
             });
         }
 
@@ -70,7 +73,10 @@ class CertificateController extends Controller
                 ->count(),
             'per_juz' => Certificate::where('pesantren_id', auth()->user()->pesantren_id)
                 ->where('type', 'santri_juz')
-                ->whereNotNull('juz_completed')
+                ->where(function ($q) {
+                    $q->where('juz_completed', '<', 30)
+                        ->orWhereNull('juz_completed');
+                })
                 ->count(),
         ];
 
@@ -87,7 +93,7 @@ class CertificateController extends Controller
      */
     public function show($id)
     {
-        $certificate = Certificate::with(['santri.user', 'santri.classModel.ustadz.user'])
+        $certificate = Certificate::with(['user', 'santri.activeClasses'])
             ->findOrFail($id);
 
         $pesantren = $certificate->pesantren;
@@ -108,7 +114,7 @@ class CertificateController extends Controller
      */
     public function download($id)
     {
-        $certificate = Certificate::with(['santri.user', 'santri.classModel.ustadz.user'])
+        $certificate = Certificate::with(['user', 'santri.activeClasses'])
             ->findOrFail($id);
 
         $pesantren = $certificate->pesantren;

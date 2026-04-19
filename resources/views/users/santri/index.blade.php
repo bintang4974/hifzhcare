@@ -12,7 +12,7 @@
             </div>
 
             <div>
-                <button
+                <a href="{{ route('users.santri.create') }}"
                     class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition duration-150 flex items-center mb-6">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd"
@@ -20,7 +20,7 @@
                             clip-rule="evenodd" />
                     </svg>
                     Tambah Santri
-                </button>
+                </a>
             </div>
         </div>
 

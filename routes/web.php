@@ -27,13 +27,14 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     // Hafalan (already added)
     // Hafalan Routes
     Route::prefix('hafalan')->name('hafalan.')->group(function () {
-        // Resource routes (index, create, store, show, edit, update, destroy)
-        Route::resource('', HafalanController::class)->parameters(['' => 'hafalan']);
-
-        // Additional routes
+        // Additional routes (must be before resource routes)
+        Route::get('/classes/{classId}/santri', [HafalanController::class, 'getSantriByClass'])->name('get-santri-by-class');
         Route::post('/{hafalan}/verify', [HafalanController::class, 'verify'])->name('verify');
         Route::post('/{hafalan}/reject', [HafalanController::class, 'reject'])->name('reject');
         Route::get('/progress/{user?}', [HafalanController::class, 'progress'])->name('progress');
+        
+        // Resource routes (index, create, store, show, edit, update, destroy)
+        Route::resource('', HafalanController::class)->parameters(['' => 'hafalan']);
     });
     // Route::resource('hafalan', HafalanController::class);
 
@@ -54,6 +55,13 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     Route::prefix('certificates')->name('certificates.')->group(function () {
         // List & Stats
         Route::get('/', [CertificateController::class, 'index'])->name('index');
+
+        // Show Certificate
+        Route::get('/{certificate}', [CertificateController::class, 'show'])->name('show');
+
+        // Download & Print
+        Route::get('/{certificate}/download', [CertificateController::class, 'download'])->name('download');
+        Route::get('/{certificate}/print', [CertificateController::class, 'print'])->name('print');
 
         // Manual Generate (Admin only)
         Route::middleware(['can:manage_users'])->group(function () {
@@ -101,6 +109,7 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
         Route::put('/{ustadz}', [UstadzController::class, 'update'])->name('update');
         Route::delete('/{ustadz}', [UstadzController::class, 'destroy'])->name('destroy');
         Route::post('/{ustadz}/activate', [UstadzController::class, 'activate'])->name('activate');
+        Route::patch('/{ustadz}/toggle-status', [UstadzController::class, 'toggleStatus'])->name('toggle-status');
     });
 
     // Wali Routes

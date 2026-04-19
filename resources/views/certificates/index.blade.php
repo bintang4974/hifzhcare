@@ -130,31 +130,28 @@
                     @forelse($certificates as $cert)
                         <div
                             class="bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-200 rounded-xl p-6 hover:shadow-lg transition-all">
-                            <div class="flex items-start justify-between">
-                                <!-- Certificate Info -->
+                            <div class="flex flex-col md:flex-row items-start md:items-center justify-between">
+                                <!-- Certificate Info (Left) -->
                                 <div class="flex-1">
                                     <div class="flex items-center gap-3 mb-3">
-                                        <div
-                                            class="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-full flex items-center justify-center text-white">
+                                        <div class="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-full flex items-center justify-center text-white">
                                             <i class="fas fa-certificate text-2xl"></i>
                                         </div>
                                         <div>
-                                            <h4 class="text-xl font-bold text-gray-900">{{ $cert->santri->user->name }}
-                                            </h4>
+                                            <h4 class="text-xl font-bold text-gray-900">{{ $cert->santri->user->name }}</h4>
                                             <p class="text-sm text-gray-600">
                                                 <i class="fas fa-id-card mr-1"></i>{{ $cert->santri->nis }}
                                             </p>
                                         </div>
                                     </div>
 
-                                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                                         <!-- Certificate Number -->
                                         <div class="flex items-start">
                                             <i class="fas fa-barcode text-yellow-600 mt-1 mr-2"></i>
                                             <div>
                                                 <p class="text-xs text-gray-500">Nomor Sertifikat</p>
-                                                <p class="text-sm font-bold text-gray-900">{{ $cert->certificate_number }}
-                                                </p>
+                                                <p class="text-sm font-bold text-gray-900">{{ $cert->certificate_number }}</p>
                                             </div>
                                         </div>
 
@@ -182,18 +179,16 @@
                                             <i class="fas fa-chalkboard text-yellow-600 mt-1 mr-2"></i>
                                             <div>
                                                 <p class="text-xs text-gray-500">Kelas</p>
-                                                <p class="text-sm font-bold text-gray-900">
-                                                    {{ $cert->santri->classModel->name ?? '-' }}</p>
+                                                <p class="text-sm font-bold text-gray-900">{{ $cert->santri->firstActiveClass()?->name ?? '-' }}</p>
                                             </div>
                                         </div>
 
-                                        <!-- Issue Date -->
+                                        <!-- Issued Date -->
                                         <div class="flex items-start">
                                             <i class="fas fa-calendar text-yellow-600 mt-1 mr-2"></i>
                                             <div>
                                                 <p class="text-xs text-gray-500">Tanggal Terbit</p>
-                                                <p class="text-sm font-bold text-gray-900">
-                                                    {{ $cert->issued_at?->format('d M Y') ?? '-' }}</p>
+                                                <p class="text-sm font-bold text-gray-900">{{ $cert->issued_at?->format('d M Y') ?? '-' }}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -219,37 +214,42 @@
                                     </div>
                                 </div>
 
-                                <!-- Actions -->
-                                <div class="flex flex-col gap-2 ml-4">
+                                <!-- Actions (Right) -->
+                                <div class="w-full md:w-auto flex flex-wrap md:flex-col gap-2 mt-4 md:mt-0 md:ml-4">
                                     <a href="{{ route('certificates.show', $cert->id) }}"
-                                        class="p-2 bg-blue-100 text-blue-600 hover:bg-blue-200 rounded-lg transition text-center"
+                                        class="flex-1 md:flex-none px-3 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition text-center text-sm font-medium inline-flex items-center justify-center gap-2"
                                         title="Lihat Sertifikat">
                                         <i class="fas fa-eye"></i>
+                                        <span>Lihat</span>
                                     </a>
 
                                     <a href="{{ route('certificates.download', $cert->id) }}"
-                                        class="p-2 bg-green-100 text-green-600 hover:bg-green-200 rounded-lg transition text-center"
+                                        class="flex-1 md:flex-none px-3 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg transition text-center text-sm font-medium inline-flex items-center justify-center gap-2"
                                         title="Download PDF">
                                         <i class="fas fa-download"></i>
+                                        <span>Download</span>
                                     </a>
 
                                     <a href="{{ route('certificates.print', $cert->id) }}" target="_blank"
-                                        class="p-2 bg-purple-100 text-purple-600 hover:bg-purple-200 rounded-lg transition text-center"
+                                        class="flex-1 md:flex-none px-3 py-2 bg-purple-600 text-white hover:bg-purple-700 rounded-lg transition text-center text-sm font-medium inline-flex items-center justify-center gap-2"
                                         title="Cetak">
                                         <i class="fas fa-print"></i>
+                                        <span>Cetak</span>
                                     </a>
 
                                     <button onclick="sendCertificate({{ $cert->id }})"
-                                        class="p-2 bg-yellow-100 text-yellow-600 hover:bg-yellow-200 rounded-lg transition text-center"
+                                        class="flex-1 md:flex-none px-3 py-2 bg-yellow-600 text-white hover:bg-yellow-700 rounded-lg transition text-center text-sm font-medium inline-flex items-center justify-center gap-2"
                                         title="Kirim ke Wali">
                                         <i class="fas fa-paper-plane"></i>
+                                        <span>Kirim</span>
                                     </button>
 
                                     @if (auth()->user()->user_type === 'admin')
                                         <button onclick="deleteCertificate({{ $cert->id }})"
-                                            class="p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg transition text-center"
+                                            class="flex-1 md:flex-none px-3 py-2 bg-red-600 text-white hover:bg-red-700 rounded-lg transition text-center text-sm font-medium inline-flex items-center justify-center gap-2"
                                             title="Hapus">
                                             <i class="fas fa-trash"></i>
+                                            <span>Hapus</span>
                                         </button>
                                     @endif
                                 </div>
