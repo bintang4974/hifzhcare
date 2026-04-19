@@ -190,7 +190,7 @@ class CertificateSummaryExport implements FromCollection, WithHeadings, WithMapp
             $certificate->certificate_number,
             $certificate->santri->user->name,
             $certificate->santri->nis,
-            $certificate->santri->classModel->name ?? '-',
+            $certificate->santri->firstActiveClass()?->name ?? '-',
             $certificate->certificate_type === 'khatam' ? 'Khatam (30 Juz)' : 'Per Juz',
             $certificate->juz_number ?? 'N/A',
             $certificate->issue_date->format('d/m/Y'),

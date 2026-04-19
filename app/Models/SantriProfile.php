@@ -106,6 +106,15 @@ class SantriProfile extends Model
     {
         return $this->classes()->wherePivot('status', 'active');
     }
+
+    /**
+     * Get the first active class (shortcut for views).
+     * Returns the first active class relationship.
+     */
+    public function firstActiveClass()
+    {
+        return $this->activeClasses()->first();
+    }
     
     // ============================================
     // ACCESSORS & MUTATORS

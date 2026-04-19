@@ -51,6 +51,11 @@ class Certificate extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function santri(): BelongsTo
+    {
+        return $this->belongsTo(SantriProfile::class, 'user_id', 'user_id');
+    }
+
     public function approvedBy(): BelongsTo
     {
         return $this->belongsTo(UstadzProfile::class, 'approved_by_ustadz_id');
