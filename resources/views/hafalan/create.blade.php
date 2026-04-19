@@ -22,7 +22,10 @@
                         class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 @error('class_id') border-red-500 @enderror">
                         <option value="">Pilih Kelas</option>
                         @foreach ($classes as $class)
-                            <option value="{{ $class->id }}" {{ old('class_id') == $class->id ? 'selected' : '' }}>
+                            <option value="{{ $class->id }}" 
+                                @if(old('class_id') == $class->id) selected 
+                                @elseif(request('class_id') == $class->id) selected 
+                                @endif>
                                 {{ $class->name }}
                             </option>
                         @endforeach
@@ -39,9 +42,13 @@
                     </label>
                     <select name="user_id" id="user-select" required
                         class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 @error('user_id') border-red-500 @enderror"
-                        @if(auth()->user()->isUstadz()) disabled @endif>
+                        @if(auth()->user()->isUstadz() && !request('class_id')) disabled @endif>
                         @if(auth()->user()->isUstadz())
-                            <option value="">Pilih Kelas Terlebih Dahulu</option>
+                            @if(request('class_id'))
+                                <option value="">Memuat santri...</option>
+                            @else
+                                <option value="">Pilih Kelas Terlebih Dahulu</option>
+                            @endif
                         @else
                             <option value="">Pilih Santri</option>
                             @foreach ($users as $user)
@@ -268,7 +275,7 @@
             console.log('Document ready - initializing form');
 
             // Function to load santri for a class
-            function loadSantriForClass(classId) {
+            function loadSantriForClass(classId, selectUserId = null) {
                 const userSelect = $('#user-select');
 
                 if (!classId) {
@@ -303,6 +310,12 @@
                         }
                         
                         userSelect.html(html);
+                        
+                        // Pre-select santri if selectUserId is provided
+                        if (selectUserId) {
+                            console.log('Pre-selecting santri:', selectUserId);
+                            userSelect.val(selectUserId);
+                        }
                     },
                     error: function(xhr, status, error) {
                         console.error('Error loading santri:', status, error, xhr);
@@ -319,11 +332,19 @@
                 loadSantriForClass(classId);
             });
 
-            // On page load: if a class is already selected (from form submission), load its santri
+            // On page load: if a class is already selected (from form submission or query param), load its santri
             const initialClassId = $('#class-select').val();
+            const queryUserId = '{{ request("user_id") }}';
+            
             if (initialClassId) {
                 console.log('Page loaded with class selected:', initialClassId);
-                loadSantriForClass(initialClassId);
+                // If user_id is also in query params, pass it to pre-select
+                if (queryUserId) {
+                    console.log('Pre-selecting user from query param:', queryUserId);
+                    loadSantriForClass(initialClassId, queryUserId);
+                } else {
+                    loadSantriForClass(initialClassId);
+                }
             } else {
                 // Initialize: If no class is selected, disable santri dropdown
                 $('#user-select').prop('disabled', true);

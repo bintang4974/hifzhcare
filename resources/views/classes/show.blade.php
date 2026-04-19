@@ -106,12 +106,23 @@
                 </div>
                 <div class="space-y-2 max-h-96 overflow-y-auto">
                     @forelse($class->activeSantri as $santri)
-                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                            <div>
-                                <p class="font-semibold text-gray-900">{{ $santri->user->name }}</p>
-                                <p class="text-xs text-gray-600">{{ $santri->nis }}</p>
+                        @if(auth()->user()->isUstadz())
+                            <a href="{{ route('hafalan.create', ['class_id' => $class->id, 'user_id' => $santri->user_id]) }}"
+                                class="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border border-green-200 hover:border-green-400 hover:shadow-md transition-all cursor-pointer">
+                                <div>
+                                    <p class="font-semibold text-gray-900 hover:text-blue-600">{{ $santri->user->name }}</p>
+                                    <p class="text-xs text-gray-600">{{ $santri->nis }}</p>
+                                </div>
+                                <i class="fas fa-arrow-right text-green-600 opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                            </a>
+                        @else
+                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <div>
+                                    <p class="font-semibold text-gray-900">{{ $santri->user->name }}</p>
+                                    <p class="text-xs text-gray-600">{{ $santri->nis }}</p>
+                                </div>
                             </div>
-                        </div>
+                        @endif
                     @empty
                         <p class="text-gray-500 text-center py-8">Belum ada santri</p>
                     @endforelse
