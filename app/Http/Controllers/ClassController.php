@@ -257,15 +257,17 @@ class ClassController extends Controller
     {
         $class->load(['activeUstadz.user', 'activeSantri.user']);
 
-        // Get available ustadz (not assigned to this class)
-        $availableUstadz = UstadzProfile::whereDoesntHave('activeClasses', function ($q) use ($class) {
-            $q->where('class_id', $class->id);
-        })->with('user')->get();
+        // Get available ustadz (not assigned to this class at all)
+        $assignedUstadzIds = $class->ustadzProfiles()->pluck('ustadz_profile_id')->toArray();
+        $availableUstadz = UstadzProfile::whereHas('user')
+            ->whereNotIn('id', $assignedUstadzIds)
+            ->with('user')->get();
 
-        // Get available santri (not enrolled in this class)
-        $availableSantri = SantriProfile::whereDoesntHave('activeClasses', function ($q) use ($class) {
-            $q->where('class_id', $class->id);
-        })->with('user')
+        // Get available santri (not enrolled in this class at all)
+        $enrolledSantriIds = $class->santriProfiles()->pluck('santri_profile_id')->toArray();
+        $availableSantri = SantriProfile::whereHas('user')
+            ->whereNotIn('id', $enrolledSantriIds)
+            ->with('user')
             ->whereHas('user', function ($q) {
                 $q->where('status', 'active');
             })->get();
@@ -281,15 +283,13 @@ class ClassController extends Controller
         try {
             $this->classService->assignUstadz($class->id, $request->ustadz_profile_id);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Ustadz berhasil ditugaskan ke kelas.'
-            ]);
+            return redirect()
+                ->route('classes.members', $class->id)
+                ->with('success', 'Ustadz berhasil ditugaskan ke kelas.');
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal menugaskan ustadz: ' . $e->getMessage()
-            ], 500);
+            return redirect()
+                ->route('classes.members', $class->id)
+                ->with('error', 'Gagal menugaskan ustadz: ' . $e->getMessage());
         }
     }
 
@@ -321,15 +321,13 @@ class ClassController extends Controller
         try {
             $this->classService->enrollSantri($class->id, $request->santri_profile_id);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Santri berhasil didaftarkan ke kelas.'
-            ]);
+            return redirect()
+                ->route('classes.members', $class->id)
+                ->with('success', 'Santri berhasil didaftarkan ke kelas.');
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal mendaftarkan santri: ' . $e->getMessage()
-            ], 500);
+            return redirect()
+                ->route('classes.members', $class->id)
+                ->with('error', 'Gagal mendaftarkan santri: ' . $e->getMessage());
         }
     }
 
