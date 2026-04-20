@@ -251,8 +251,7 @@
                 <div class="border-t border-gray-200 my-4"></div>
 
                 <!-- Settings -->
-                {{-- <a href="{{ route('settings.profile') }}" --}}
-                <a href=""
+                <a href="{{ route('settings.profile') }}"
                     class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all {{ request()->routeIs('settings.*') ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-gray-700 hover:bg-gray-50' }}">
                     <i
                         class="fas fa-cog mr-3 {{ request()->routeIs('settings.*') ? 'text-blue-600' : 'text-gray-400' }}"></i>
@@ -341,13 +340,11 @@
 
                             <div x-show="open" @click.away="open = false" x-cloak
                                 class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50">
-                                {{-- <a href="{{ route('settings.profile') }}" --}}
-                                <a href=""
+                                <a href="{{ route('settings.profile') }}"
                                     class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
                                     <i class="fas fa-user mr-2"></i>Profil
                                 </a>
-                                {{-- <a href="{{ route('settings.password') }}" --}}
-                                <a href=""
+                                <a href="{{ route('settings.password') }}"
                                     class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
                                     <i class="fas fa-key mr-2"></i>Ubah Password
                                 </a>
