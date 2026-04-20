@@ -6,55 +6,116 @@ use App\Http\Requests\ProfileUpdateRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
-    /**
-     * Display the user's profile form.
-     */
-    public function edit(Request $request): View
+    public function __construct()
     {
-        return view('profile.edit', [
-            'user' => $request->user(),
-        ]);
+        $this->middleware('auth');
     }
 
     /**
-     * Update the user's profile information.
+     * Display user profile
      */
-    public function update(ProfileUpdateRequest $request): RedirectResponse
+    public function index()
     {
-        $request->user()->fill($request->validated());
+        return view('profile.index');
+    }
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+    /**
+     * Show edit profile form
+     */
+    public function edit()
+    {
+        return view('profile.edit');
+    }
+
+    /**
+     * Update profile
+     */
+    public function update(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'unique:users,email,' . auth()->id()],
+            'phone' => ['nullable', 'string', 'max:20'],
+            'avatar' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
+        ]);
+
+        $user = auth()->user();
+
+        // Handle avatar upload
+        if ($request->hasFile('avatar')) {
+            // Delete old avatar if exists
+            if ($user->avatar) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+
+            $avatarPath = $request->file('avatar')->store('avatars', 'public');
+            $validated['avatar'] = $avatarPath;
         }
 
-        $request->user()->save();
+        $user->update($validated);
 
-        return Redirect::route('profile.edit')->with('status', 'profile-updated');
+        return redirect()
+            ->route('profile.index')
+            ->with('success', 'Profil berhasil diperbarui!');
     }
 
     /**
-     * Delete the user's account.
+     * Show change password form
      */
-    public function destroy(Request $request): RedirectResponse
+    public function changePassword()
     {
-        $request->validateWithBag('userDeletion', [
+        return view('profile.change-password');
+    }
+
+    /**
+     * Update password
+     */
+    public function updatePassword(Request $request)
+    {
+        $validated = $request->validate([
+            'current_password' => ['required', 'current_password'],
+            'new_password' => ['required', 'confirmed', Password::min(8)
+                ->mixedCase()
+                ->numbers()
+                ->symbols()],
+        ], [
+            'current_password.current_password' => 'Password saat ini tidak sesuai!',
+            'new_password.confirmed' => 'Konfirmasi password tidak cocok!',
+        ]);
+
+        // Update password
+        auth()->user()->update([
+            'password' => Hash::make($validated['new_password'])
+        ]);
+
+        return redirect()->route('profile.index')->with('success', 'Password berhasil diubah!');
+    }
+
+    /**
+     * Delete account
+     */
+    public function destroy(Request $request)
+    {
+        $request->validate([
             'password' => ['required', 'current_password'],
         ]);
 
-        $user = $request->user();
+        $user = auth()->user();
 
-        Auth::logout();
+        // Logout
+        auth()->logout();
 
+        // Delete user
         $user->delete();
 
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-
-        return Redirect::to('/');
+        return redirect()->route('login')->with('success', 'Akun Anda telah dihapus.');
     }
 }

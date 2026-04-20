@@ -1,12 +1,15 @@
 <?php
 
 use App\Http\Controllers\AdminManagementController;
+use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\ClassController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HafalanController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SantriController;
+use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\StakeholderDashboardController;
 use App\Http\Controllers\SuperAdminDashboardController;
 use App\Http\Controllers\UstadzController;
@@ -24,6 +27,29 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     })->name('debug.permissions');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+    // Profile Routes
+    Route::middleware(['auth'])->prefix('profile')->name('profile.')->group(function () {
+        Route::get('/', [ProfileController::class, 'index'])->name('index');
+        Route::get('/edit', [ProfileController::class, 'edit'])->name('edit');
+        Route::put('/update', [ProfileController::class, 'update'])->name('update');
+        Route::get('/change-password', [ProfileController::class, 'changePassword'])->name('change-password');
+        Route::put('/update-password', [ProfileController::class, 'updatePassword'])->name('update-password');
+        Route::delete('/delete', [ProfileController::class, 'destroy'])->name('destroy');
+    });
+
+    // Settings Routes
+    Route::middleware(['auth'])->prefix('settings')->name('settings.')->group(function () {
+        Route::get('/', [SettingsController::class, 'index'])->name('index');
+        Route::put('/update', [SettingsController::class, 'update'])->name('update');
+        
+        // Profile Settings (alias to ProfileController)
+        Route::get('/profile', [ProfileController::class, 'index'])->name('profile');
+        Route::get('/password', [ProfileController::class, 'changePassword'])->name('password');
+        
+        // Notifications Settings (admin only)
+        Route::middleware(['can:manage_users'])->get('/notifications', [SettingsController::class, 'notifications'])->name('notifications');
+    });
+
     // Hafalan (already added)
     // Hafalan Routes
     Route::prefix('hafalan')->name('hafalan.')->group(function () {
@@ -32,7 +58,7 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
         Route::post('/{hafalan}/verify', [HafalanController::class, 'verify'])->name('verify');
         Route::post('/{hafalan}/reject', [HafalanController::class, 'reject'])->name('reject');
         Route::get('/progress/{user?}', [HafalanController::class, 'progress'])->name('progress');
-        
+
         // Resource routes (index, create, store, show, edit, update, destroy)
         Route::resource('', HafalanController::class)->parameters(['' => 'hafalan']);
     });
