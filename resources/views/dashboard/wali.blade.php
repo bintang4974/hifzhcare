@@ -151,10 +151,10 @@
                                 <i class="fas fa-gift text-3xl text-gray-400"></i>
                             </div>
                             <p class="text-gray-500 mb-3">Belum ada riwayat donasi</p>
-                            <button
+                            <a href="{{ route('donations.create') }}"
                                 class="px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition">
                                 <i class="fas fa-plus-circle mr-2"></i>Donasi Sekarang
-                            </button>
+                            </a>
                         </div>
                     @endforelse
                 </div>

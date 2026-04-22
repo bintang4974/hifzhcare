@@ -1,10 +1,12 @@
 <?php
 
+use App\Http\Controllers\AdminDonationController;
 use App\Http\Controllers\AdminManagementController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\ClassController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DonationController;
 use App\Http\Controllers\HafalanController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
@@ -12,7 +14,9 @@ use App\Http\Controllers\SantriController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\StakeholderDashboardController;
 use App\Http\Controllers\SuperAdminDashboardController;
+use App\Http\Controllers\SuperAdminDonationController;
 use App\Http\Controllers\UstadzController;
+use App\Http\Controllers\UstadzDonationController;
 use App\Http\Controllers\WaliController;
 use Illuminate\Support\Facades\Route;
 
@@ -41,11 +45,11 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     Route::middleware(['auth'])->prefix('settings')->name('settings.')->group(function () {
         Route::get('/', [SettingsController::class, 'index'])->name('index');
         Route::put('/update', [SettingsController::class, 'update'])->name('update');
-        
+
         // Profile Settings (alias to ProfileController)
         Route::get('/profile', [ProfileController::class, 'index'])->name('profile');
         Route::get('/password', [ProfileController::class, 'changePassword'])->name('password');
-        
+
         // Notifications Settings (admin only)
         Route::middleware(['can:manage_users'])->get('/notifications', [SettingsController::class, 'notifications'])->name('notifications');
     });
@@ -171,6 +175,40 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
 
         // Certificate Reports
         Route::post('/certificate-summary', [ReportController::class, 'certificateSummary'])->name('certificate-summary');
+    });
+
+    // ====================================
+    // DONATION ROUTES - MOVED OUT OF REPORTS MIDDLEWARE
+    // ====================================
+    // Wali Donation Routes
+    Route::middleware(['auth'])->prefix('donations')->name('donations.')->group(function () {
+        Route::get('/create', [DonationController::class, 'create'])->name('create');
+        Route::post('/', [DonationController::class, 'store'])->name('store');
+        Route::get('/', [DonationController::class, 'index'])->name('index');
+        Route::get('/{id}', [DonationController::class, 'show'])->name('show');
+    });
+
+    // SuperAdmin Donation Routes
+    Route::middleware(['auth'])->prefix('superadmin/donations')->name('superadmin.donations.')->group(function () {
+        Route::get('/', [SuperAdminDonationController::class, 'index'])->name('index');
+        Route::post('/{id}/verify', [SuperAdminDonationController::class, 'verify'])->name('verify');
+        Route::post('/{id}/reject', [SuperAdminDonationController::class, 'reject'])->name('reject');
+        Route::get('/transfers', [SuperAdminDonationController::class, 'transfers'])->name('transfers');
+        Route::post('/{id}/transfer', [SuperAdminDonationController::class, 'markTransferred'])->name('transfer');
+    });
+
+    // Admin Pondok Donation Routes
+    Route::middleware(['auth'])->prefix('admin/donations')->name('admin.donations.')->group(function () {
+        Route::get('/', [AdminDonationController::class, 'index'])->name('index');
+        Route::get('/{id}', [AdminDonationController::class, 'show'])->name('show');
+        Route::post('/{id}/approve', [AdminDonationController::class, 'approve'])->name('approve');
+    });
+
+    // Ustadz Donation Routes
+    Route::middleware(['auth'])->prefix('ustadz/donations')->name('ustadz.donations.')->group(function () {
+        Route::get('/balance', [UstadzDonationController::class, 'balance'])->name('balance');
+        Route::get('/withdraw', [UstadzDonationController::class, 'withdrawForm'])->name('withdraw');
+        Route::post('/request-withdrawal', [UstadzDonationController::class, 'requestWithdrawal'])->name('request-withdrawal');
     });
 });
 
