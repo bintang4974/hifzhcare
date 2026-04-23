@@ -94,6 +94,9 @@ class AdminManagementController extends Controller
             'email_verified_at' => $validated['status'] === 'active' ? now() : null,
         ]);
 
+        // Assign role
+        $admin->assignRole('Admin Pesantren');
+
         // Send credentials email if requested
         if ($request->boolean('send_credentials_email')) {
             // Mail::to($admin->email)->send(new AdminCredentials($admin, $validated['password']));

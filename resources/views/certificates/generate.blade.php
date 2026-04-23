@@ -62,7 +62,7 @@
                             <option value="">-- Pilih Santri --</option>
                             @foreach ($santris as $santri)
                                 <option value="{{ $santri->id }}" data-nis="{{ $santri->nis }}"
-                                    data-class="{{ $santri->classModel->name ?? '-' }}"
+                                    data-class="{{ $santri->firstActiveClass()?->name ?? '-' }}"
                                     data-progress="{{ $santri->progress_percentage }}"
                                     data-certificates="{{ $santri->certificates->count() }}">
                                     {{ $santri->user->name }} ({{ $santri->nis }})

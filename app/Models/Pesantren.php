@@ -175,6 +175,14 @@ class Pesantren extends Model
         return $this->hasMany(User::class)->where('user_type', 'admin');
     }
 
+    /**
+     * Get the donation settings for this pesantren.
+     */
+    public function donationSettings()
+    {
+        return $this->hasOne(DonationSetting::class);
+    }
+
     // ============================================
     // ACCESSORS & MUTATORS
     // ============================================
