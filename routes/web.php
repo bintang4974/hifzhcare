@@ -20,6 +20,10 @@ use App\Http\Controllers\UstadzDonationController;
 use App\Http\Controllers\WaliController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/landing', function () {
+    return view('landing');
+});
+
 Route::get('/', function () {
     return redirect()->route('login');
 });

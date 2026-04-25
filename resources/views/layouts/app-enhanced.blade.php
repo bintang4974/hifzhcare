@@ -248,6 +248,86 @@
                     </a>
                 @endcan
 
+                <!-- Donations Menu (Role-based) -->
+                @php
+                    $canSeeDonations = auth()->check() && (
+                        auth()->user()->hasRole('Wali Santri') ||
+                        auth()->user()->hasRole('Admin Pesantren') ||
+                        auth()->user()->hasRole('Ustadz') ||
+                        auth()->user()->hasRole('Super Admin')
+                    );
+                @endphp
+
+                @if($canSeeDonations)
+                    @if(auth()->user()->hasRole('Wali Santri'))
+                        <!-- Donations for Wali -->
+                        <a href="{{ route('donations.index') }}"
+                            class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all {{ request()->routeIs('donations.*') ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-gray-700 hover:bg-gray-50' }}">
+                            <i
+                                class="fas fa-heart mr-3 {{ request()->routeIs('donations.*') ? 'text-blue-600' : 'text-gray-400' }}"></i>
+                            Dana Apresiasi
+                            @if (auth()->check() && auth()->user()->waliProfile)
+                                @php
+                                    $pendingDonations = \App\Models\Donation::where('wali_id', auth()->user()->waliProfile->id)
+                                        ->where('status', 'pending')
+                                        ->count();
+                                @endphp
+                                @if ($pendingDonations > 0)
+                                    <span class="ml-auto bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                                        {{ $pendingDonations }}
+                                    </span>
+                                @endif
+                            @endif
+                        </a>
+                    @elseif(auth()->user()->hasRole('Admin Pesantren'))
+                        <!-- Donations for Admin -->
+                        <a href="{{ route('admin.donations.index') }}"
+                            class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all {{ request()->routeIs('admin.donations.*') ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-gray-700 hover:bg-gray-50' }}">
+                            <i
+                                class="fas fa-money-bill-wave mr-3 {{ request()->routeIs('admin.donations.*') ? 'text-blue-600' : 'text-gray-400' }}"></i>
+                            Pencairan Dana
+                            @if (auth()->check())
+                                @php
+                                    $pendingApprovals = \App\Models\Donation::where('pesantren_id', auth()->user()->pesantren_id)
+                                        ->where('status', 'requested')
+                                        ->count();
+                                @endphp
+                                @if ($pendingApprovals > 0)
+                                    <span class="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                                        {{ $pendingApprovals }}
+                                    </span>
+                                @endif
+                            @endif
+                        </a>
+                    @elseif(auth()->user()->hasRole('Ustadz'))
+                        <!-- Donations for Ustadz -->
+                        <a href="{{ route('ustadz.donations.balance') }}"
+                            class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all {{ request()->routeIs('ustadz.donations.*') ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-gray-700 hover:bg-gray-50' }}">
+                            <i
+                                class="fas fa-wallet mr-3 {{ request()->routeIs('ustadz.donations.*') ? 'text-blue-600' : 'text-gray-400' }}"></i>
+                            Saldo Dana Apresiasi
+                        </a>
+                    @elseif(auth()->user()->hasRole('Super Admin'))
+                        <!-- Donations for SuperAdmin -->
+                        <a href="{{ route('superadmin.donations.index') }}"
+                            class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all {{ request()->routeIs('superadmin.donations.*') ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-gray-700 hover:bg-gray-50' }}">
+                            <i
+                                class="fas fa-check-double mr-3 {{ request()->routeIs('superadmin.donations.*') ? 'text-blue-600' : 'text-gray-400' }}"></i>
+                            Verifikasi Dana
+                            @if (auth()->check())
+                                @php
+                                    $pendingVerifications = \App\Models\Donation::where('status', 'pending')->count();
+                                @endphp
+                                @if ($pendingVerifications > 0)
+                                    <span class="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                                        {{ $pendingVerifications }}
+                                    </span>
+                                @endif
+                            @endif
+                        </a>
+                    @endif
+                @endif
+
                 <div class="border-t border-gray-200 my-4"></div>
 
                 <!-- Settings -->

@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{Pesantren, User, Hafalan, Certificate};
+use App\Models\{Pesantren, User, Hafalan, Certificate, Donation};
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -105,8 +105,8 @@ class DashboardController extends Controller
             'verified_today' => $ustadz->verifiedHafalans()
                 ->whereDate('verified_at', today())
                 ->count(),
-            'total_appreciation' => $ustadz->appreciationFunds()
-                ->where('status', 'verified')
+            'total_appreciation' => $ustadz->donations()
+                ->whereIn('status', ['verified', 'transferred', 'available', 'requested', 'disbursed'])
                 ->sum('amount'),
         ];
 
@@ -196,8 +196,8 @@ class DashboardController extends Controller
 
         $stats = [
             'total_children' => $wali->santriProfiles()->count(),
-            'total_donations' => $wali->appreciationFunds()
-                ->where('status', 'verified')
+            'total_donations' => Donation::where('wali_id', $wali->id)
+                ->whereIn('status', ['verified', 'transferred', 'available', 'requested', 'disbursed'])
                 ->sum('amount'),
         ];
 
@@ -216,11 +216,11 @@ class DashboardController extends Controller
             ];
         });
 
-        // Recent donations
-        $recentDonations = $wali->appreciationFunds()
-            ->latest()
-            ->take(5)
-            ->with(['verifiedBy.user', 'user'])
+        // Recent donations - using Donation model instead of AppreciationFund
+        $recentDonations = Donation::where('wali_id', $wali->id)
+            ->with(['ustadz.user', 'santri.user'])
+            ->orderByDesc('created_at')
+            ->limit(5)
             ->get();
 
         return view('dashboard.wali', compact(
