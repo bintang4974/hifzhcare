@@ -13,6 +13,7 @@ class Donation extends Model
     protected $fillable = [
         'wali_id',
         'ustadz_id',
+        'santri_id',
         'pesantren_id',
         'donation_code',
         'amount',
@@ -58,6 +59,11 @@ class Donation extends Model
     public function ustadz()
     {
         return $this->belongsTo(UstadzProfile::class, 'ustadz_id');
+    }
+
+    public function santri()
+    {
+        return $this->belongsTo(SantriProfile::class, 'santri_id');
     }
  
     public function pesantren()

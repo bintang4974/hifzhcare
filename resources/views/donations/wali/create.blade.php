@@ -64,13 +64,13 @@
                             class="w-full pl-14 pr-4 py-3 rounded-lg border-gray-300 focus:border-pink-500 focus:ring focus:ring-pink-200 text-lg font-semibold"
                             placeholder="100000" onkeyup="calculateFees()" onchange="calculateFees()">
                     </div>
-                    <p class="text-xs text-gray-500 mt-1">Minimal donasi Rp 10.000</p>
+                    {{-- <p class="text-xs text-gray-500 mt-1">Minimal donasi Rp 10.000</p> --}}
                     @error('amount')
                         <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                     @enderror
 
                     <!-- Fee Breakdown -->
-                    <div id="feeBreakdown"
+                    {{-- <div id="feeBreakdown"
                         class="mt-4 p-5 bg-gradient-to-br from-pink-50 to-rose-50 rounded-xl border-2 border-pink-200 hidden">
                         <h4 class="font-bold text-gray-900 mb-4 flex items-center">
                             <i class="fas fa-calculator text-pink-600 mr-2"></i>
@@ -99,7 +99,7 @@
                                 <span class="text-xl font-bold text-green-700" id="ustadzNet">Rp 0</span>
                             </div>
                         </div>
-                    </div>
+                    </div> --}}
                 </div>
 
                 <!-- Payment Method -->
@@ -196,8 +196,8 @@
                             <ul class="list-disc list-inside space-y-1">
                                 <li>Transfer ke rekening yang tertera di atas</li>
                                 <li>Upload bukti transfer yang jelas dan valid</li>
-                                <li>Donasi akan diverifikasi oleh admin (1-2 hari kerja)</li>
-                                <li>Dana akan diteruskan ke ustadz melalui pondok</li>
+                                <li>Donasi akan diverifikasi 1-2 hari kerja</li>
+                                {{-- <li>Dana akan diteruskan ke ustadz melalui pondok</li> --}}
                             </ul>
                         </div>
                     </div>
@@ -232,10 +232,11 @@
                     document.getElementById('platformFee').textContent = formatRupiah(platformFee);
                     document.getElementById('pesantrenFee').textContent = formatRupiah(pesantrenFee);
                     document.getElementById('ustadzNet').textContent = formatRupiah(ustadzNet);
-                    document.getElementById('feeBreakdown').classList.remove('hidden');
-                } else {
-                    document.getElementById('feeBreakdown').classList.add('hidden');
-                }
+                    // document.getElementById('feeBreakdown').classList.remove('hidden');
+                } 
+                // else {
+                //     document.getElementById('feeBreakdown').classList.add('hidden');
+                // }
             }
 
             function formatRupiah(amount) {

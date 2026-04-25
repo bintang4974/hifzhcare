@@ -20,6 +20,10 @@ use App\Http\Controllers\UstadzDonationController;
 use App\Http\Controllers\WaliController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/landing', function () {
+    return view('landing');
+});
+
 Route::get('/', function () {
     return redirect()->route('login');
 });
@@ -216,7 +220,7 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
 Route::middleware(['auth', 'role:Super Admin'])->prefix('superadmin')->name('superadmin.')->group(function () {
     Route::get('/dashboard', [SuperAdminDashboardController::class, 'index'])->name('dashboard');
     // Pesantren CRUD
-    Route::get('/pesantrens', [SuperAdminDashboardController::class, 'pesantrens'])->name('pesantrens');
+    Route::get('/pesantrens', [SuperAdminDashboardController::class, 'pesantrens'])->name('pesantrens.index');
     Route::get('/pesantrens/create', [SuperAdminDashboardController::class, 'createPesantren'])->name('pesantrens.create');
     Route::post('/pesantrens', [SuperAdminDashboardController::class, 'storePesantren'])->name('pesantrens.store');
     Route::get('/pesantrens/{id}', [SuperAdminDashboardController::class, 'showPesantren'])->name('pesantrens.show');
@@ -254,6 +258,9 @@ Route::middleware(['auth', 'role:Super Admin'])->prefix('superadmin')->name('sup
 Route::middleware(['auth', 'tenant', 'role:Stakeholder'])->prefix('stakeholder')->name('stakeholder.')->group(function () {
     // Main dashboard
     Route::get('/dashboard', [StakeholderDashboardController::class, 'index'])->name('dashboard');
+
+    // Reports
+    Route::get('/trend-analysis', [StakeholderDashboardController::class, 'trendAnalysis'])->name('trend-analysis');
 
     // Export reports
     Route::post('/export-report', [StakeholderDashboardController::class, 'exportReport'])->name('export');

@@ -238,17 +238,134 @@
                 @endcan
 
                 @can('view_reports')
-                    <!-- Reports -->
-                    <a href="{{ route('reports.index') }}"
-                    {{-- <a href="" --}}
-                        class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all {{ request()->routeIs('reports.*') ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-gray-700 hover:bg-gray-50' }}">
-                        <i
-                            class="fas fa-chart-bar mr-3 {{ request()->routeIs('reports.*') ? 'text-blue-600' : 'text-gray-400' }}"></i>
-                        Laporan
-                    </a>
+                    <!-- Admin Reports Menu -->
+                    @if(auth()->user()->hasRole('Admin Pesantren'))
+                        <a href="{{ route('reports.index') }}"
+                            class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all {{ request()->routeIs('reports.*') ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-gray-700 hover:bg-gray-50' }}">
+                            <i
+                                class="fas fa-chart-bar mr-3 {{ request()->routeIs('reports.*') ? 'text-blue-600' : 'text-gray-400' }}"></i>
+                            Laporan
+                        </a>
+                    @endif
                 @endcan
 
-                <div class="border-t border-gray-200 my-4"></div>
+                @if(auth()->user()->hasRole('Stakeholder'))
+                    <!-- Stakeholder Reports Menu -->
+                    <a href="{{ route('stakeholder.trend-analysis') }}"
+                        class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all {{ request()->routeIs('stakeholder.trend-analysis') ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-gray-700 hover:bg-gray-50' }}">
+                        <i
+                            class="fas fa-chart-bar mr-3 {{ request()->routeIs('stakeholder.trend-analysis') ? 'text-blue-600' : 'text-gray-400' }}"></i>
+                        Laporan Analisis Tren
+                    </a>
+                @endif
+
+                <!-- Donations Menu (Role-based) -->
+                @php
+                    $canSeeDonations = auth()->check() && (
+                        auth()->user()->hasRole('Wali Santri') ||
+                        auth()->user()->hasRole('Admin Pesantren') ||
+                        auth()->user()->hasRole('Ustadz') ||
+                        auth()->user()->hasRole('Super Admin')
+                    );
+                @endphp
+
+                @if($canSeeDonations)
+                    @if(auth()->user()->hasRole('Wali Santri'))
+                        <!-- Donations for Wali -->
+                        <a href="{{ route('donations.index') }}"
+                            class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all {{ request()->routeIs('donations.*') ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-gray-700 hover:bg-gray-50' }}">
+                            <i
+                                class="fas fa-heart mr-3 {{ request()->routeIs('donations.*') ? 'text-blue-600' : 'text-gray-400' }}"></i>
+                            Dana Apresiasi
+                            @if (auth()->check() && auth()->user()->waliProfile)
+                                @php
+                                    $pendingDonations = \App\Models\Donation::where('wali_id', auth()->user()->waliProfile->id)
+                                        ->where('status', 'pending')
+                                        ->count();
+                                @endphp
+                                @if ($pendingDonations > 0)
+                                    <span class="ml-auto bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                                        {{ $pendingDonations }}
+                                    </span>
+                                @endif
+                            @endif
+                        </a>
+                    @elseif(auth()->user()->hasRole('Admin Pesantren'))
+                        <!-- Donations for Admin -->
+                        <a href="{{ route('admin.donations.index') }}"
+                            class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all {{ request()->routeIs('admin.donations.*') ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-gray-700 hover:bg-gray-50' }}">
+                            <i
+                                class="fas fa-money-bill-wave mr-3 {{ request()->routeIs('admin.donations.*') ? 'text-blue-600' : 'text-gray-400' }}"></i>
+                            Pencairan Dana
+                            @if (auth()->check())
+                                @php
+                                    $pendingApprovals = \App\Models\Donation::where('pesantren_id', auth()->user()->pesantren_id)
+                                        ->where('status', 'requested')
+                                        ->count();
+                                @endphp
+                                @if ($pendingApprovals > 0)
+                                    <span class="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                                        {{ $pendingApprovals }}
+                                    </span>
+                                @endif
+                            @endif
+                        </a>
+                    @elseif(auth()->user()->hasRole('Ustadz'))
+                        <!-- Donations for Ustadz -->
+                        <a href="{{ route('ustadz.donations.balance') }}"
+                            class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all {{ request()->routeIs('ustadz.donations.*') ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-gray-700 hover:bg-gray-50' }}">
+                            <i
+                                class="fas fa-wallet mr-3 {{ request()->routeIs('ustadz.donations.*') ? 'text-blue-600' : 'text-gray-400' }}"></i>
+                            Saldo Dana Apresiasi
+                        </a>
+                    @elseif(auth()->user()->hasRole('Super Admin'))
+                        <!-- Donations for SuperAdmin -->
+                        <a href="{{ route('superadmin.donations.index') }}"
+                            class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all {{ request()->routeIs('superadmin.donations.*') ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-gray-700 hover:bg-gray-50' }}">
+                            <i
+                                class="fas fa-check-double mr-3 {{ request()->routeIs('superadmin.donations.*') ? 'text-blue-600' : 'text-gray-400' }}"></i>
+                            Verifikasi Dana
+                            @if (auth()->check())
+                                @php
+                                    $pendingVerifications = \App\Models\Donation::where('status', 'pending')->count();
+                                @endphp
+                                @if ($pendingVerifications > 0)
+                                    <span class="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                                        {{ $pendingVerifications }}
+                                    </span>
+                                @endif
+                            @endif
+                        </a>
+                    @endif
+                @endif
+
+                <!-- Super Admin Management Menu -->
+                @if(auth()->user()->isSuperAdmin())
+                    <div class="border-t border-gray-200 my-4"></div>
+                    <div x-data="{ open: {{ request()->routeIs('superadmin.*') ? 'true' : 'false' }} }">
+                        <button @click="open = !open"
+                            class="w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg transition-all {{ request()->routeIs('superadmin.*') ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-gray-700 hover:bg-gray-50' }}">
+                            <div class="flex items-center">
+                                <i
+                                    class="fas fa-crown mr-3 {{ request()->routeIs('superadmin.*') ? 'text-blue-600' : 'text-gray-400' }}"></i>
+                                Manajemen Super Admin
+                            </div>
+                            <i class="fas fa-chevron-down text-xs transform" :class="open ? 'rotate-180' : ''"></i>
+                        </button>
+                        <div x-show="open" x-cloak class="ml-4 mt-2 space-y-1">
+                            <a href="{{ route('superadmin.pesantrens.index') }}"
+                                class="block px-4 py-2 text-sm rounded-lg {{ request()->routeIs('superadmin.pesantrens.*') ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50' }}">
+                                <i class="fas fa-mosque mr-2"></i>Manajemen Pesantren
+                            </a>
+                            <a href="{{ route('superadmin.admins.index') }}"
+                                class="block px-4 py-2 text-sm rounded-lg {{ request()->routeIs('superadmin.admins.*') ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50' }}">
+                                <i class="fas fa-user-shield mr-2"></i>Manajemen Admin Pesantren
+                            </a>
+                        </div>
+                    </div>
+                @else
+                    <div class="border-t border-gray-200 my-4"></div>
+                @endif
 
                 <!-- Settings -->
                 <a href="{{ route('settings.profile') }}"

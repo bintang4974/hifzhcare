@@ -56,6 +56,7 @@ class DonationController extends Controller
     {
         $validated = $request->validate([
             'ustadz_id' => 'required|exists:ustadz_profiles,id',
+            'santri_id' => 'nullable|exists:santri_profiles,id',
             'amount' => 'required|numeric|min:10000',
             'payment_proof' => 'required|image|mimes:jpeg,png,jpg|max:2048',
             'notes' => 'nullable|string|max:500',
@@ -66,6 +67,22 @@ class DonationController extends Controller
 
         $wali = auth()->user()->waliProfile;
 
+        // Get ustadz
+        $ustadz = UstadzProfile::findOrFail($validated['ustadz_id']);
+
+        // If santri_id not provided, get first santri from wali's children who is in ustadz's classes
+        $santriId = $validated['santri_id'] ?? null;
+        if (!$santriId) {
+            $santriId = $wali->santriProfiles()
+                ->whereHas('activeClasses', function ($query) use ($ustadz) {
+                    $query->whereHas('ustadzProfiles', function ($q) use ($ustadz) {
+                        $q->where('ustadz_profiles.id', $ustadz->id);
+                    });
+                })
+                ->first()
+                ?->id;
+        }
+
         // Upload payment proof
         $proofPath = $request->file('payment_proof')->store('donations/proofs', 'public');
 
@@ -73,6 +90,7 @@ class DonationController extends Controller
         $donation = Donation::create([
             'wali_id' => $wali->id,
             'ustadz_id' => $validated['ustadz_id'],
+            'santri_id' => $santriId,
             'pesantren_id' => auth()->user()->pesantren_id,
             'amount' => $validated['amount'],
             'payment_method' => 'transfer',

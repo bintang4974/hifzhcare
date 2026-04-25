@@ -306,6 +306,24 @@ class SantriController extends Controller
      */
     public function stats(Request $request)
     {
+        // For Super Admin, return global stats across all pesantrens
+        if (auth()->user()->isSuperAdmin()) {
+            $base = SantriProfile::whereHas('user');
+
+            $total = $base->count();
+            $active = (clone $base)->whereHas('user', fn($q) => $q->where('status', 'active'))->count();
+            $pending = (clone $base)->whereHas('user', fn($q) => $q->where('status', 'pending'))->count();
+            $graduated = (clone $base)->whereHas('user', fn($q) => $q->where('status', 'graduated'))->count();
+
+            return response()->json([
+                'total' => $total,
+                'active' => $active,
+                'pending' => $pending,
+                'graduated' => $graduated,
+            ]);
+        }
+
+        // For pesantren admins, return pesantren-specific stats
         $pesantrenId = auth()->user()->pesantren_id;
 
         $base = SantriProfile::whereHas('user', function ($q) use ($pesantrenId) {

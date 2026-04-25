@@ -83,15 +83,14 @@ class AdminDonationController extends Controller
     }
 
     /**
-     * Show approve form
+     * Show donation detail
      */
     public function show($id)
     {
         $donation = Donation::where('pesantren_id', auth()->user()->pesantren_id)
-            ->where('status', 'requested')
-            ->with(['ustadz.user', 'wali.user'])
+            ->with(['ustadz.user', 'wali.user', 'disbursedBy', 'pesantren.donationSettings'])
             ->findOrFail($id);
 
-        return view('donations.admin.approve', compact('donation'));
+        return view('donations.admin.show', compact('donation'));
     }
 }

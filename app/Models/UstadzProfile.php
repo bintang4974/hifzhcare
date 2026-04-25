@@ -79,6 +79,11 @@ class UstadzProfile extends Model
         return $this->hasMany(AppreciationFund::class);
     }
 
+    public function donations(): HasMany
+    {
+        return $this->hasMany(Donation::class, 'ustadz_id');
+    }
+
     public function approvedCertificates(): HasMany
     {
         return $this->hasMany(Certificate::class, 'approved_by_ustadz_id');
