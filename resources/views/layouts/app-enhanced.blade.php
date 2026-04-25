@@ -238,15 +238,26 @@
                 @endcan
 
                 @can('view_reports')
-                    <!-- Reports -->
-                    <a href="{{ route('reports.index') }}"
-                    {{-- <a href="" --}}
-                        class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all {{ request()->routeIs('reports.*') ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-gray-700 hover:bg-gray-50' }}">
-                        <i
-                            class="fas fa-chart-bar mr-3 {{ request()->routeIs('reports.*') ? 'text-blue-600' : 'text-gray-400' }}"></i>
-                        Laporan
-                    </a>
+                    <!-- Admin Reports Menu -->
+                    @if(auth()->user()->hasRole('Admin Pesantren'))
+                        <a href="{{ route('reports.index') }}"
+                            class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all {{ request()->routeIs('reports.*') ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-gray-700 hover:bg-gray-50' }}">
+                            <i
+                                class="fas fa-chart-bar mr-3 {{ request()->routeIs('reports.*') ? 'text-blue-600' : 'text-gray-400' }}"></i>
+                            Laporan
+                        </a>
+                    @endif
                 @endcan
+
+                @if(auth()->user()->hasRole('Stakeholder'))
+                    <!-- Stakeholder Reports Menu -->
+                    <a href="{{ route('stakeholder.trend-analysis') }}"
+                        class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all {{ request()->routeIs('stakeholder.trend-analysis') ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-gray-700 hover:bg-gray-50' }}">
+                        <i
+                            class="fas fa-chart-bar mr-3 {{ request()->routeIs('stakeholder.trend-analysis') ? 'text-blue-600' : 'text-gray-400' }}"></i>
+                        Laporan Analisis Tren
+                    </a>
+                @endif
 
                 <!-- Donations Menu (Role-based) -->
                 @php
@@ -328,7 +339,33 @@
                     @endif
                 @endif
 
-                <div class="border-t border-gray-200 my-4"></div>
+                <!-- Super Admin Management Menu -->
+                @if(auth()->user()->isSuperAdmin())
+                    <div class="border-t border-gray-200 my-4"></div>
+                    <div x-data="{ open: {{ request()->routeIs('superadmin.*') ? 'true' : 'false' }} }">
+                        <button @click="open = !open"
+                            class="w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg transition-all {{ request()->routeIs('superadmin.*') ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-gray-700 hover:bg-gray-50' }}">
+                            <div class="flex items-center">
+                                <i
+                                    class="fas fa-crown mr-3 {{ request()->routeIs('superadmin.*') ? 'text-blue-600' : 'text-gray-400' }}"></i>
+                                Manajemen Super Admin
+                            </div>
+                            <i class="fas fa-chevron-down text-xs transform" :class="open ? 'rotate-180' : ''"></i>
+                        </button>
+                        <div x-show="open" x-cloak class="ml-4 mt-2 space-y-1">
+                            <a href="{{ route('superadmin.pesantrens.index') }}"
+                                class="block px-4 py-2 text-sm rounded-lg {{ request()->routeIs('superadmin.pesantrens.*') ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50' }}">
+                                <i class="fas fa-mosque mr-2"></i>Manajemen Pesantren
+                            </a>
+                            <a href="{{ route('superadmin.admins.index') }}"
+                                class="block px-4 py-2 text-sm rounded-lg {{ request()->routeIs('superadmin.admins.*') ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50' }}">
+                                <i class="fas fa-user-shield mr-2"></i>Manajemen Admin Pesantren
+                            </a>
+                        </div>
+                    </div>
+                @else
+                    <div class="border-t border-gray-200 my-4"></div>
+                @endif
 
                 <!-- Settings -->
                 <a href="{{ route('settings.profile') }}"

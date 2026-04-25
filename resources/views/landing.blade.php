@@ -163,11 +163,11 @@
                 </div>
                 <!-- CTA -->
                 <div class="hidden md:flex items-center gap-3">
-                    <a href="https://wa.me/6281234567890?text=Assalamualaikum%2C%20saya%20tertarik%20dengan%20HifzhCare"
+                    <a href="https://wa.me/6285179756513?text=Assalamualaikum%2C%20saya%20tertarik%20dengan%20HifzhCare"
                         target="_blank"
                         class="text-sm font-medium text-slate-600 hover:text-emerald-600 transition-colors px-4 py-2">Hubungi
                         Kami</a>
-                    <a href="https://wa.me/6281234567890?text=Assalamualaikum%2C%20saya%20ingin%20minta%20demo%20HifzhCare"
+                    <a href="https://wa.me/6285179756513?text=Assalamualaikum%2C%20saya%20ingin%20minta%20demo%20HifzhCare"
                         target="_blank"
                         class="text-sm font-semibold text-white bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 px-5 py-2.5 rounded-xl shadow-md shadow-emerald-200 transition-all duration-200">Minta
                         Demo</a>
@@ -1250,11 +1250,12 @@
                             Account manager khusus
                         </li>
                     </ul>
-                    <a href="https://wa.me/6281234567890?text=Assalamualaikum%2C%20saya%20tertarik%20paket%20Enterprise%20HifzhCare"
+                    <a href="https://wa.me/6285179756513?text=Assalamualaikum%2C%20saya%20tertarik%20paket%20Enterprise%20HifzhCare"
                         target="_blank"
                         class="block text-center text-sm font-semibold text-slate-800 bg-white hover:bg-slate-100 px-6 py-3 rounded-xl transition-colors">
                         Hubungi Kami
                     </a>
+                    {{-- https://wa.link/fg9pjl --}}
                 </div>
             </div>
 
@@ -1297,7 +1298,7 @@
             </p>
 
             <div class="fade-up delay-3 flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="https://wa.me/6281234567890?text=Assalamualaikum%2C%20saya%20ingin%20minta%20demo%20HifzhCare%20untuk%20pondok%20kami"
+                <a href="https://wa.me/6285179756513?text=Assalamualaikum%2C%20saya%20ingin%20minta%20demo%20HifzhCare%20untuk%20pondok%20kami"
                     target="_blank"
                     class="inline-flex items-center justify-center gap-3 text-base font-semibold text-emerald-800 bg-white hover:bg-slate-50 px-8 py-4 rounded-2xl shadow-xl shadow-black/20 transition-all duration-200 hover:-translate-y-0.5">
                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -1306,7 +1307,7 @@
                     </svg>
                     Hubungi via WhatsApp
                 </a>
-                <a href="https://wa.me/6281234567890?text=Assalamualaikum%2C%20saya%20ingin%20request%20demo%20HifzhCare"
+                <a href="https://wa.me/6285179756513?text=Assalamualaikum%2C%20saya%20ingin%20request%20demo%20HifzhCare"
                     target="_blank"
                     class="inline-flex items-center justify-center gap-2 text-base font-semibold text-white bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-sm px-8 py-4 rounded-2xl transition-all duration-200">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">

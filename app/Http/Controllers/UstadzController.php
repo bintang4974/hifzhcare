@@ -44,8 +44,12 @@ class UstadzController extends Controller
         $query = UstadzProfile::with(['user', 'activeClasses'])
             ->join('users', 'users.id', '=', 'ustadz_profiles.user_id')
             ->select('ustadz_profiles.*')
-            ->where('ustadz_profiles.pesantren_id', session('current_pesantren_id'))
             ->whereHas('user'); // Only show ustadz with existing (non-deleted) users
+
+        // Only filter by pesantren if NOT Super Admin
+        if (!auth()->user()->isSuperAdmin()) {
+            $query->where('ustadz_profiles.pesantren_id', session('current_pesantren_id'));
+        }
 
         // Filters
         if ($request->filled('status')) {
@@ -363,6 +367,22 @@ class UstadzController extends Controller
      */
     public function stats()
     {
+        // For Super Admin, return global stats across all pesantrens
+        if (auth()->user()->isSuperAdmin()) {
+            $stats = [
+                'total' => UstadzProfile::count(),
+                'active' => User::where('user_type', 'ustadz')
+                    ->where('status', 'active')
+                    ->count(),
+                'pending' => User::where('user_type', 'ustadz')
+                    ->where('status', 'pending')
+                    ->count(),
+                'total_classes' => DB::table('class_ustadz')->count(),
+            ];
+            return response()->json($stats);
+        }
+
+        // For pesantren admins, return pesantren-specific stats
         $pesantrenId = session('current_pesantren_id');
 
         $stats = [

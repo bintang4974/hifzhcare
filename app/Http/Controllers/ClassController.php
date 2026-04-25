@@ -27,6 +27,18 @@ class ClassController extends Controller
     {
         // Check if requesting stats only
         if ($request->query('stats') === '1') {
+            // For Super Admin, return global stats across all pesantrens
+            if (auth()->user()->isSuperAdmin()) {
+                $stats = [
+                    'total' => Classes::count(),
+                    'active' => Classes::where('status', 'active')->count(),
+                    'students' => SantriProfile::whereHas('user')->count(),
+                    'teachers' => UstadzProfile::count(),
+                ];
+                return response()->json(['stats' => $stats]);
+            }
+
+            // For pesantren admins, return pesantren-specific stats
             $pesantrenId = auth()->user()->pesantren_id;
             
             $stats = [

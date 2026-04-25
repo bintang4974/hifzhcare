@@ -24,8 +24,12 @@ class CertificateController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Certificate::with(['user', 'santri'])
-            ->where('pesantren_id', auth()->user()->pesantren_id);
+        // For Super Admin, show all certificates. For pesantren admin, show only their pesantren's certificates
+        $query = Certificate::with(['user', 'santri']);
+        
+        if (!auth()->user()->isSuperAdmin()) {
+            $query->where('pesantren_id', auth()->user()->pesantren_id);
+        }
 
         // Filter by type (translate UI values to DB columns)
         if ($request->filled('type')) {
@@ -61,30 +65,52 @@ class CertificateController extends Controller
 
         $certificates = $query->latest()->paginate(20);
 
-        // Statistics
-        $stats = [
-            'total' => Certificate::where('pesantren_id', auth()->user()->pesantren_id)->count(),
-            'this_month' => Certificate::where('pesantren_id', auth()->user()->pesantren_id)
-                ->whereMonth('issued_at', now()->month)
-                ->whereYear('issued_at', now()->year)
-                ->count(),
-            'khatam' => Certificate::where('pesantren_id', auth()->user()->pesantren_id)
-                ->where('type', 'santri_juz')
-                ->where('juz_completed', '>=', 30)
-                ->count(),
-            'per_juz' => Certificate::where('pesantren_id', auth()->user()->pesantren_id)
-                ->where('type', 'santri_juz')
-                ->where(function ($q) {
-                    $q->where('juz_completed', '<', 30)
-                        ->orWhereNull('juz_completed');
-                })
-                ->count(),
-        ];
+        // Statistics - Global for Super Admin, Pesantren-specific for others
+        if (auth()->user()->isSuperAdmin()) {
+            $stats = [
+                'total' => Certificate::count(),
+                'this_month' => Certificate::whereMonth('issued_at', now()->month)
+                    ->whereYear('issued_at', now()->year)
+                    ->count(),
+                'khatam' => Certificate::where('type', 'santri_juz')
+                    ->where('juz_completed', '>=', 30)
+                    ->count(),
+                'per_juz' => Certificate::where('type', 'santri_juz')
+                    ->where(function ($q) {
+                        $q->where('juz_completed', '<', 30)
+                            ->orWhereNull('juz_completed');
+                    })
+                    ->count(),
+            ];
+        } else {
+            $stats = [
+                'total' => Certificate::where('pesantren_id', auth()->user()->pesantren_id)->count(),
+                'this_month' => Certificate::where('pesantren_id', auth()->user()->pesantren_id)
+                    ->whereMonth('issued_at', now()->month)
+                    ->whereYear('issued_at', now()->year)
+                    ->count(),
+                'khatam' => Certificate::where('pesantren_id', auth()->user()->pesantren_id)
+                    ->where('type', 'santri_juz')
+                    ->where('juz_completed', '>=', 30)
+                    ->count(),
+                'per_juz' => Certificate::where('pesantren_id', auth()->user()->pesantren_id)
+                    ->where('type', 'santri_juz')
+                    ->where(function ($q) {
+                        $q->where('juz_completed', '<', 30)
+                            ->orWhereNull('juz_completed');
+                    })
+                    ->count(),
+            ];
+        }
 
-        // Get classes for filter
-        $classes = Classes::where('pesantren_id', auth()->user()->pesantren_id)
-            ->orderBy('name')
-            ->get();
+        // Get classes for filter - All for Super Admin, Pesantren-specific for others
+        if (auth()->user()->isSuperAdmin()) {
+            $classes = Classes::orderBy('name')->get();
+        } else {
+            $classes = Classes::where('pesantren_id', auth()->user()->pesantren_id)
+                ->orderBy('name')
+                ->get();
+        }
 
         return view('certificates.index', compact('certificates', 'stats', 'classes'));
     }

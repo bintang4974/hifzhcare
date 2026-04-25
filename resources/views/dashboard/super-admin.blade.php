@@ -16,7 +16,7 @@
                     class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
                     <i class="fas fa-sync-alt mr-2"></i>Refresh
                 </button>
-                <a href="{{ route('superadmin.pesantrens') }}"
+                <a href="{{ route('superadmin.pesantrens.index') }}"
                     class="px-6 py-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition">
                     <i class="fas fa-building mr-2"></i>Kelola Pesantren
                 </a>

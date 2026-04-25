@@ -44,8 +44,12 @@ class WaliController extends Controller
         $query = WaliProfile::with(['user', 'santriProfiles.user'])
             ->join('users', 'users.id', '=', 'wali_profiles.user_id')
             ->select('wali_profiles.*')
-            ->where('wali_profiles.pesantren_id', session('current_pesantren_id'))
             ->whereHas('user'); // Only show wali with existing (non-deleted) users
+
+        // Only filter by pesantren if NOT Super Admin
+        if (!auth()->user()->isSuperAdmin()) {
+            $query->where('wali_profiles.pesantren_id', session('current_pesantren_id'));
+        }
 
         // Filters
         if ($request->filled('status')) {
@@ -307,6 +311,34 @@ class WaliController extends Controller
 
     public function stats()
     {
+        // For Super Admin, return global stats across all pesantrens
+        if (auth()->user()->isSuperAdmin()) {
+            $stats = [
+                'total_wali' => WaliProfile::whereHas('user')->count(),
+                'active_wali' => WaliProfile::whereHas('user', function($q) {
+                    $q->where('status', 'active');
+                })->count(),
+                'total_santri' => DB::table('santri_profiles')
+                    ->join('wali_profiles', 'santri_profiles.wali_id', '=', 'wali_profiles.id')
+                    ->join('users', 'wali_profiles.user_id', '=', 'users.id')
+                    ->whereNull('users.deleted_at')
+                    ->count(),
+                'total_donations' => 'Rp ' . number_format(
+                    DB::table('donations')
+                        ->join('wali_profiles', 'donations.wali_id', '=', 'wali_profiles.id')
+                        ->join('users', 'wali_profiles.user_id', '=', 'users.id')
+                        ->whereIn('donations.status', ['verified', 'transferred', 'available', 'requested', 'disbursed'])
+                        ->whereNull('users.deleted_at')
+                        ->sum('donations.amount') ?? 0,
+                    0,
+                    ',',
+                    '.'
+                ),
+            ];
+            return response()->json($stats);
+        }
+
+        // For pesantren admins, return pesantren-specific stats
         $pesantrenId = session('current_pesantren_id');
 
         $stats = [
@@ -325,13 +357,13 @@ class WaliController extends Controller
                 ->whereNull('users.deleted_at')
                 ->count(),
             'total_donations' => 'Rp ' . number_format(
-                DB::table('appreciation_fund_donations')
-                    ->join('wali_profiles', 'appreciation_fund_donations.wali_id', '=', 'wali_profiles.id')
+                DB::table('donations')
+                    ->join('wali_profiles', 'donations.wali_id', '=', 'wali_profiles.id')
                     ->join('users', 'wali_profiles.user_id', '=', 'users.id')
                     ->where('wali_profiles.pesantren_id', $pesantrenId)
-                    ->where('appreciation_fund_donations.status', 'verified')
+                    ->whereIn('donations.status', ['verified', 'transferred', 'available', 'requested', 'disbursed'])
                     ->whereNull('users.deleted_at')
-                    ->sum('appreciation_fund_donations.amount') ?? 0,
+                    ->sum('donations.amount') ?? 0,
                 0,
                 ',',
                 '.'
