@@ -25,10 +25,10 @@
                         <div class="flex flex-wrap items-center gap-3">
                             <select id="periodFilter"
                                 class="h-11 rounded-xl border-slate-300 bg-white px-4 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                <option value="month">Bulan Ini</option>
-                                <option value="quarter">Kuartal Ini</option>
-                                <option value="year" selected>Tahun Ini</option>
-                                <option value="all">Semua Waktu</option>
+                                <option value="month" {{ $period === 'month' ? 'selected' : '' }}>Bulan Ini</option>
+                                <option value="quarter" {{ $period === 'quarter' ? 'selected' : '' }}>Kuartal Ini</option>
+                                <option value="year" {{ $period === 'year' ? 'selected' : '' }}>Tahun Ini</option>
+                                <option value="all" {{ $period === 'all' ? 'selected' : '' }}>Semua Waktu</option>
                             </select>
                             <button type="button" onclick="exportFinancial()"
                                 class="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2">
@@ -65,7 +65,7 @@
                         <div class="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20">
                             <i class="fas fa-percent text-xl"></i>
                         </div>
-                        <p class="text-sm font-medium text-sky-50">Platform Fee (3%)</p>
+                        <p class="text-sm font-medium text-sky-50">Platform Fee ({{ $financial['platform_percentage'] }}%)</p>
                         <p class="mt-3 text-3xl font-bold leading-none">Rp {{ number_format($financial['platform_fee'], 0, ',', '.') }}</p>
                         <p class="mt-3 text-xs text-sky-50/90">Fee untuk platform</p>
                     </div>
@@ -74,7 +74,7 @@
                         <div class="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20">
                             <i class="fas fa-mosque text-xl"></i>
                         </div>
-                        <p class="text-sm font-medium text-violet-50">Dana Pesantren (10%)</p>
+                        <p class="text-sm font-medium text-violet-50">Dana Pesantren ({{ $financial['pesantren_percentage'] }}%)</p>
                         <p class="mt-3 text-3xl font-bold leading-none">Rp {{ number_format($financial['pesantren_share'], 0, ',', '.') }}</p>
                         <p class="mt-3 text-xs text-violet-50/90">Bagian pesantren</p>
                     </div>
@@ -83,7 +83,7 @@
                         <div class="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20">
                             <i class="fas fa-hand-holding-usd text-xl"></i>
                         </div>
-                        <p class="text-sm font-medium text-orange-50">Dana Ustadz (87%)</p>
+                        <p class="text-sm font-medium text-orange-50">Dana Ustadz ({{ $financial['ustadz_percentage'] }}%)</p>
                         <p class="mt-3 text-3xl font-bold leading-none">Rp {{ number_format($financial['ustadz_total'], 0, ',', '.') }}</p>
                         <p class="mt-3 text-xs text-orange-50/90">Total untuk ustadz</p>
                     </div>
@@ -120,17 +120,17 @@
                             <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
                                 <div class="rounded-2xl border border-orange-200 bg-orange-50 p-4">
                                     <p class="text-xs font-medium text-orange-700">Dana Ustadz</p>
-                                    <p class="mt-2 text-lg font-bold text-slate-900">87%</p>
+                                    <p class="mt-2 text-lg font-bold text-slate-900">{{ $financial['ustadz_percentage'] }}%</p>
                                     <p class="mt-1 text-sm text-orange-700">Rp {{ number_format($financial['ustadz_total'], 0, ',', '.') }}</p>
                                 </div>
                                 <div class="rounded-2xl border border-violet-200 bg-violet-50 p-4">
                                     <p class="text-xs font-medium text-violet-700">Dana Pesantren</p>
-                                    <p class="mt-2 text-lg font-bold text-slate-900">10%</p>
+                                    <p class="mt-2 text-lg font-bold text-slate-900">{{ $financial['pesantren_percentage'] }}%</p>
                                     <p class="mt-1 text-sm text-violet-700">Rp {{ number_format($financial['pesantren_share'], 0, ',', '.') }}</p>
                                 </div>
                                 <div class="rounded-2xl border border-sky-200 bg-sky-50 p-4">
                                     <p class="text-xs font-medium text-sky-700">Platform Fee</p>
-                                    <p class="mt-2 text-lg font-bold text-slate-900">3%</p>
+                                    <p class="mt-2 text-lg font-bold text-slate-900">{{ $financial['platform_percentage'] }}%</p>
                                     <p class="mt-1 text-sm text-sky-700">Rp {{ number_format($financial['platform_fee'], 0, ',', '.') }}</p>
                                 </div>
                             </div>
@@ -409,12 +409,20 @@
         <script>
             // Revenue Distribution Pie Chart
             var ctx = document.getElementById('revenueDistributionChart').getContext('2d');
+            const ustadzPercentage = {{ $financial['ustadz_percentage'] }};
+            const pesantrenPercentage = {{ $financial['pesantren_percentage'] }};
+            const platformPercentage = {{ $financial['platform_percentage'] }};
+
             new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Dana Ustadz (87%)', 'Dana Pesantren (10%)', 'Platform Fee (3%)'],
+                    labels: [
+                        `Dana Ustadz (${ustadzPercentage}%)`,
+                        `Dana Pesantren (${pesantrenPercentage}%)`,
+                        `Platform Fee (${platformPercentage}%)`
+                    ],
                     datasets: [{
-                        data: [87, 10, 3],
+                        data: [ustadzPercentage, pesantrenPercentage, platformPercentage],
                         backgroundColor: ['#F97316', '#A855F7', '#3B82F6'],
                         borderWidth: 0
                     }]
@@ -483,8 +491,16 @@
             });
             monthlyRevenueChart.render();
 
+            document.getElementById('periodFilter').addEventListener('change', function() {
+                const url = new URL(window.location.href);
+                url.searchParams.set('period', this.value);
+                window.location.href = url.toString();
+            });
+
             function exportFinancial() {
-                window.location.href = '{{ route('stakeholder.export') }}';
+                const url = new URL('{{ route('stakeholder.export') }}', window.location.origin);
+                url.searchParams.set('type', document.getElementById('periodFilter').value || 'year');
+                window.location.href = url.toString();
             }
         </script>
     @endpush

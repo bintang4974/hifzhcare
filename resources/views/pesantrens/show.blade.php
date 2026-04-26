@@ -15,7 +15,7 @@
                 </p>
             </div>
             <div class="flex gap-3">
-                <a href="{{ route('superadmin.pesantrens') }}"
+                <a href="{{ route('superadmin.pesantrens.index') }}"
                     class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg shadow-md transition">
                     <i class="fas fa-arrow-left mr-2"></i>Kembali
                 </a>

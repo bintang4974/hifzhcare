@@ -11,7 +11,7 @@
                 <h1 class="text-3xl font-bold text-gray-900">Edit Pesantren</h1>
                 <p class="text-gray-600 mt-1">Update data pesantren {{ $pesantren->name }}</p>
             </div>
-            <a href="{{ route('superadmin.pesantrens') }}"
+            <a href="{{ route('superadmin.pesantrens.show', $pesantren->id) }}"
                 class="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-xl shadow-md transition">
                 <i class="fas fa-arrow-left mr-2"></i>Kembali
             </a>
@@ -241,7 +241,7 @@
 
             <!-- Submit Buttons -->
             <div class="flex gap-4">
-                <a href="{{ route('superadmin.pesantrens') }}"
+                <a href="{{ route('superadmin.pesantrens.show', $pesantren->id) }}"
                     class="flex-1 text-center px-6 py-4 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl transition shadow-md">
                     <i class="fas fa-times mr-2"></i>Batal
                 </a>
