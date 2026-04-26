@@ -13,6 +13,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SantriController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\StakeholderDashboardController;
+use App\Http\Controllers\StakeholderReportController;
 use App\Http\Controllers\SuperAdminDashboardController;
 use App\Http\Controllers\SuperAdminDonationController;
 use App\Http\Controllers\UstadzController;
@@ -260,10 +261,12 @@ Route::middleware(['auth', 'tenant', 'role:Stakeholder'])->prefix('stakeholder')
     Route::get('/dashboard', [StakeholderDashboardController::class, 'index'])->name('dashboard');
 
     // Reports
-    Route::get('/trend-analysis', [StakeholderDashboardController::class, 'trendAnalysis'])->name('trend-analysis');
+    Route::get('/trend-analysis', [StakeholderReportController::class, 'trendAnalysis'])->name('trend-analysis');
+    Route::get('/performance-overview', [StakeholderReportController::class, 'performanceOverview'])->name('performance-analysis');
+    Route::get('/financial-summary', [StakeholderReportController::class, 'financialSummary'])->name('financial-summary');
 
     // Export reports
-    Route::post('/export-report', [StakeholderDashboardController::class, 'exportReport'])->name('export');
+    Route::get('/export-report', [StakeholderDashboardController::class, 'exportReport'])->name('export');
 });
 
 require __DIR__ . '/auth.php';

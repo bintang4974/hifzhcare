@@ -250,13 +250,36 @@
                 @endcan
 
                 @if(auth()->user()->hasRole('Stakeholder'))
-                    <!-- Stakeholder Reports Menu -->
-                    <a href="{{ route('stakeholder.trend-analysis') }}"
-                        class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all {{ request()->routeIs('stakeholder.trend-analysis') ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-gray-700 hover:bg-gray-50' }}">
-                        <i
-                            class="fas fa-chart-bar mr-3 {{ request()->routeIs('stakeholder.trend-analysis') ? 'text-blue-600' : 'text-gray-400' }}"></i>
-                        Laporan Analisis Tren
-                    </a>
+                    <!-- Stakeholder Reports Menu with Dropdown -->
+                    <div x-data="{ open: {{ request()->routeIs('stakeholder.*') ? 'true' : 'false' }} }">
+                        <button @click="open = !open"
+                            class="w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg transition-all {{ request()->routeIs('stakeholder.*') ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-gray-700 hover:bg-gray-50' }}">
+                            <div class="flex items-center">
+                                <i
+                                    class="fas fa-chart-bar mr-3 {{ request()->routeIs('stakeholder.*') ? 'text-blue-600' : 'text-gray-400' }}"></i>
+                                Laporan
+                            </div>
+                            <i class="fas fa-chevron-down text-xs transform" :class="open ? 'rotate-180' : ''"></i>
+                        </button>
+                        <div x-show="open" x-cloak class="ml-4 mt-2 space-y-1">
+                            <a href="{{ route('stakeholder.dashboard') }}"
+                                class="block px-4 py-2 text-sm rounded-lg {{ request()->routeIs('stakeholder.dashboard') ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-600 hover:bg-gray-50' }}">
+                                <i class="fas fa-home mr-2"></i>Dashboard
+                            </a>
+                            <a href="{{ route('stakeholder.financial-summary') }}"
+                                class="block px-4 py-2 text-sm rounded-lg {{ request()->routeIs('stakeholder.financial-summary') ? 'bg-green-50 text-green-700 font-semibold' : 'text-gray-600 hover:bg-gray-50' }}">
+                                <i class="fas fa-wallet mr-2"></i>Financial Summary
+                            </a>
+                            <a href="{{ route('stakeholder.performance-analysis') }}"
+                                class="block px-4 py-2 text-sm rounded-lg {{ request()->routeIs('stakeholder.performance-analysis') ? 'bg-purple-50 text-purple-700 font-semibold' : 'text-gray-600 hover:bg-gray-50' }}">
+                                <i class="fas fa-chart-pie mr-2"></i>Performance Analysis
+                            </a>
+                            <a href="{{ route('stakeholder.trend-analysis') }}"
+                                class="block px-4 py-2 text-sm rounded-lg {{ request()->routeIs('stakeholder.trend-analysis') ? 'bg-orange-50 text-orange-700 font-semibold' : 'text-gray-600 hover:bg-gray-50' }}">
+                                <i class="fas fa-chart-line mr-2"></i>Trend Analysis
+                            </a>
+                        </div>
+                    </div>
                 @endif
 
                 <!-- Donations Menu (Role-based) -->
