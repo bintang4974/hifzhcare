@@ -3,7 +3,14 @@
 @section('title', 'Performance Overview')
 
 @section('content')
-    <div class="space-y-6">
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <!-- Sidebar -->
+        <div class="lg:col-span-1">
+            @include('components.stakeholder-report-sidebar')
+        </div>
+
+        <!-- Main Content -->
+        <div class="lg:col-span-3 space-y-6">
         <!-- Header -->
         <div class="flex items-center justify-between">
             <div>
@@ -373,6 +380,7 @@
             </div>
 
         </div>
+        </div>
     </div>
 
     @push('scripts')
@@ -410,9 +418,9 @@
                 }
             });
 
-            function exportReport() {
-                window.location.href = '{{ route('stakeholder.performance.export') }}';
-            }
+            // function exportReport() {
+            //     window.location.href = '{{ route('stakeholder.export') }}';
+            // }
         </script>
     @endpush
 @endsection
