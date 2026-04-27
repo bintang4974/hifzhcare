@@ -140,6 +140,11 @@
                 </div>
             </div>
 
+            {{-- Mobile Card List (< 768px) --}}
+            <div class="mobile-list" id="mobile-card-list">
+                <div class="mobile-loading">Memuat data...</div>
+            </div>
+
             <div class="table-wrap">
                 <table id="ustadz-table">
                     <thead>
@@ -242,14 +247,14 @@
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
 
     <style>
-        /* =============================================
-           USTADZ PAGE — CONSISTENT WITH HAFALAN MODULE
-           ============================================= */
+        * {
+            box-sizing: border-box;
+        }
 
         .ustadz-page {
             max-width: 1280px;
             margin: 0 auto;
-            padding: 1.5rem 1rem 3rem;
+            padding: 1rem 0.875rem 3rem;
         }
 
         /* --- Page Header --- */
@@ -257,13 +262,12 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
         }
 
         .page-title {
-            font-size: 1.5rem;
+            font-size: 1.25rem;
             font-weight: 700;
             color: #111827;
             margin: 0;
@@ -271,26 +275,26 @@
         }
 
         .page-subtitle {
-            font-size: 0.875rem;
+            font-size: 0.8125rem;
             color: #6b7280;
-            margin: 4px 0 0;
+            margin: 3px 0 0;
         }
 
         .btn-primary {
             display: inline-flex;
             align-items: center;
-            gap: 7px;
-            padding: 9px 18px;
+            gap: 6px;
+            padding: 8px 14px;
             background: #2563eb;
             color: #fff;
             border: none;
             border-radius: 8px;
-            font-size: 0.875rem;
+            font-size: 0.8125rem;
             font-weight: 600;
             cursor: pointer;
             text-decoration: none;
             white-space: nowrap;
-            transition: background 0.15s;
+            flex-shrink: 0;
         }
 
         .btn-primary:hover {
@@ -303,49 +307,48 @@
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            margin-bottom: 1.25rem;
-        }
-
-        @media (min-width: 768px) {
-            .stats-grid {
-                grid-template-columns: repeat(4, 1fr);
-            }
+            gap: 10px;
+            margin-bottom: 1rem;
         }
 
         .stat-card {
             border-radius: 12px;
-            padding: 1.1rem 1.25rem;
+            padding: 0.875rem 1rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 12px;
+            gap: 8px;
             border: 1px solid transparent;
+            min-width: 0;
         }
 
         .stat-content {
             min-width: 0;
+            flex: 1;
         }
 
         .stat-label {
-            font-size: 0.75rem;
+            font-size: 0.6875rem;
             font-weight: 600;
             letter-spacing: 0.3px;
             margin: 0 0 4px;
             opacity: 0.85;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .stat-value {
-            font-size: 1.75rem;
+            font-size: 1.5rem;
             font-weight: 700;
             margin: 0;
             line-height: 1;
         }
 
         .stat-icon {
-            width: 44px;
-            height: 44px;
-            border-radius: 10px;
+            width: 38px;
+            height: 38px;
+            border-radius: 9px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -353,7 +356,6 @@
             opacity: 0.85;
         }
 
-        /* Color variants — flat, no gradient */
         .stat-green {
             background: #dcfce7;
             color: #14532d;
@@ -408,32 +410,25 @@
 
         /* --- Filter Card --- */
         .filter-card {
-            padding: 1.25rem;
-            margin-bottom: 1.25rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
         }
 
         .filter-grid {
             display: grid;
-            grid-template-columns: repeat(1, 1fr);
-            gap: 10px;
-            margin-bottom: 12px;
-        }
-
-        @media (min-width: 480px) {
-            .filter-grid {
-                grid-template-columns: repeat(2, 1fr);
-                max-width: 480px;
-            }
+            grid-template-columns: 1fr;
+            gap: 8px;
+            margin-bottom: 10px;
         }
 
         .filter-label {
             display: block;
-            font-size: 0.7rem;
+            font-size: 0.6875rem;
             font-weight: 600;
             color: #6b7280;
             text-transform: uppercase;
             letter-spacing: 0.4px;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
         }
 
         .filter-input {
@@ -444,7 +439,6 @@
             font-size: 0.8125rem;
             color: #374151;
             background: #fff;
-            transition: border-color 0.15s, box-shadow 0.15s;
         }
 
         .filter-input:focus {
@@ -459,16 +453,17 @@
         }
 
         .btn-filter {
+            flex: 1;
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 6px;
-            padding: 8px 20px;
+            padding: 8px 16px;
             border-radius: 7px;
             font-size: 0.8125rem;
             font-weight: 600;
             cursor: pointer;
             border: none;
-            transition: background 0.15s;
         }
 
         .btn-apply {
@@ -499,14 +494,14 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 1rem 1.25rem;
+            padding: 0.875rem 1rem;
             border-bottom: 1px solid #e5e7eb;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 8px;
         }
 
         .table-title {
-            font-size: 1rem;
+            font-size: 0.9375rem;
             font-weight: 700;
             color: #111827;
             margin: 0;
@@ -516,35 +511,35 @@
             position: relative;
             display: flex;
             align-items: center;
+            flex: 1;
+            max-width: 180px;
         }
 
         .search-icon {
             position: absolute;
-            left: 10px;
+            left: 9px;
             color: #9ca3af;
             pointer-events: none;
         }
 
         .search-input {
-            padding: 7px 12px 7px 32px;
+            width: 100%;
+            padding: 7px 10px 7px 30px;
             border: 1px solid #d1d5db;
             border-radius: 7px;
             font-size: 0.8125rem;
             color: #374151;
-            width: 200px;
-            transition: border-color 0.15s, box-shadow 0.15s, width 0.2s;
         }
 
         .search-input:focus {
             outline: none;
             border-color: #2563eb;
             box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-            width: 240px;
         }
 
         .refresh-btn {
-            width: 34px;
-            height: 34px;
+            width: 32px;
+            height: 32px;
             border: 1px solid #e5e7eb;
             border-radius: 7px;
             background: #fff;
@@ -553,7 +548,6 @@
             align-items: center;
             justify-content: center;
             color: #6b7280;
-            transition: all 0.15s;
             flex-shrink: 0;
         }
 
@@ -562,23 +556,23 @@
             color: #111827;
         }
 
-        /* --- DataTable Overrides --- */
+        /* --- DESKTOP TABLE (≥ 768px) --- */
         .table-wrap {
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
+            display: none;
         }
 
         #ustadz-table {
             width: 100% !important;
             border-collapse: collapse;
             font-size: 0.8125rem;
-            min-width: 680px;
         }
 
         #ustadz-table thead th {
             padding: 10px 14px;
             background: #f9fafb;
-            font-size: 0.7rem;
+            font-size: 0.6875rem;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -624,28 +618,132 @@
             border-radius: 8px !important;
             font-size: 0.8125rem !important;
             color: #6b7280 !important;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
             padding: 12px 20px !important;
         }
 
-        /* --- Ustadz Cell --- */
-        .ustadz-cell {
+        /* --- MOBILE CARD LIST (< 768px) --- */
+        .mobile-list {
+            display: block;
+        }
+
+        .mobile-loading {
+            padding: 2rem 1rem;
+            text-align: center;
+            color: #9ca3af;
+            font-size: 0.875rem;
+        }
+
+        .ustadz-card-item {
+            padding: 0.875rem 1rem;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .ustadz-card-item:last-child {
+            border-bottom: none;
+        }
+
+        .ustadz-card-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .ustadz-card-left {
             display: flex;
             align-items: center;
             gap: 10px;
+            flex: 1;
+            min-width: 0;
         }
 
+        .ustadz-card-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .ustadz-card-name {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: #111827;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .ustadz-card-nip {
+            font-family: monospace;
+            font-size: 0.6875rem;
+            color: #9ca3af;
+            margin-top: 2px;
+        }
+
+        .ustadz-card-contact {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .ustadz-card-contact span {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .ustadz-card-kelas {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 8px;
+        }
+
+        .ustadz-card-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .ustadz-card-verified {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.75rem;
+            color: #6b7280;
+        }
+
+        .ustadz-card-actions {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #f3f4f6;
+        }
+
+        /* --- Shared Components --- */
         .avatar {
-            width: 34px;
-            height: 34px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 700;
             flex-shrink: 0;
-            letter-spacing: 0.3px;
+        }
+
+        .ustadz-cell {
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .ustadz-name {
@@ -655,13 +753,6 @@
             line-height: 1.3;
         }
 
-        .ustadz-phone {
-            font-size: 0.7rem;
-            color: #9ca3af;
-            margin-top: 1px;
-        }
-
-        /* --- Badges --- */
         .badge {
             display: inline-flex;
             align-items: center;
@@ -669,7 +760,6 @@
             border-radius: 20px;
             font-size: 0.6875rem;
             font-weight: 600;
-            letter-spacing: 0.2px;
             white-space: nowrap;
         }
 
@@ -688,7 +778,6 @@
             color: #6b7280;
         }
 
-        /* --- NIP chip --- */
         .nip-chip {
             font-family: monospace;
             font-size: 0.75rem;
@@ -699,7 +788,6 @@
             letter-spacing: 0.5px;
         }
 
-        /* --- Kelas tag --- */
         .kelas-tag {
             display: inline-flex;
             align-items: center;
@@ -709,7 +797,6 @@
             font-weight: 600;
             background: #dbeafe;
             color: #1e40af;
-            margin: 2px 2px 2px 0;
             white-space: nowrap;
         }
 
@@ -718,13 +805,12 @@
             color: #d1d5db;
         }
 
-        /* --- Verified count --- */
         .verified-count {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-width: 28px;
-            height: 24px;
+            min-width: 26px;
+            height: 22px;
             border-radius: 6px;
             background: #f3f4f6;
             color: #374151;
@@ -742,8 +828,8 @@
         }
 
         .action-btn {
-            width: 30px;
-            height: 30px;
+            width: 32px;
+            height: 32px;
             border-radius: 7px;
             border: 1px solid #e5e7eb;
             background: #fff;
@@ -751,13 +837,9 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.15s;
             text-decoration: none;
             color: #6b7280;
-        }
-
-        .action-btn:hover {
-            border-color: transparent;
+            flex-shrink: 0;
         }
 
         .action-btn.view {
@@ -805,12 +887,12 @@
             border-color: #fecaca;
         }
 
-        /* --- Table Footer --- */
+        /* --- Table Footer / Pagination --- */
         .table-footer-info {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px 1.25rem;
+            padding: 10px 1rem;
             border-top: 1px solid #e5e7eb;
             background: #f9fafb;
             flex-wrap: wrap;
@@ -840,7 +922,6 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.15s;
         }
 
         .pg-btn:hover:not(.disabled):not(.active) {
@@ -858,16 +939,16 @@
             cursor: not-allowed;
         }
 
-        /* --- Modal --- */
+        /* --- Modal — bottom sheet on mobile --- */
         .modal-overlay {
             position: fixed;
             inset: 0;
             background: rgba(0, 0, 0, 0.45);
             z-index: 9999;
             display: flex;
-            align-items: center;
+            align-items: flex-end;
             justify-content: center;
-            padding: 1rem;
+            padding: 0;
         }
 
         .modal-overlay.hidden {
@@ -876,23 +957,22 @@
 
         .modal-box {
             background: #fff;
-            border-radius: 14px;
-            padding: 1.5rem;
+            border-radius: 14px 14px 0 0;
+            padding: 1.5rem 1.25rem;
             width: 100%;
-            max-width: 420px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-            animation: modalIn 0.2s ease;
+            box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.12);
+            animation: slideUp 0.25s ease;
         }
 
-        @keyframes modalIn {
+        @keyframes slideUp {
             from {
                 opacity: 0;
-                transform: scale(0.96) translateY(-8px);
+                transform: translateY(20px);
             }
 
             to {
                 opacity: 1;
-                transform: scale(1) translateY(0);
+                transform: translateY(0);
             }
         }
 
@@ -968,7 +1048,6 @@
             font-size: 0.875rem;
             color: #374151;
             font-family: inherit;
-            transition: border-color 0.15s, box-shadow 0.15s;
         }
 
         .form-input:focus {
@@ -995,13 +1074,13 @@
             align-items: center;
             justify-content: center;
             gap: 6px;
-            padding: 9px 16px;
+            padding: 11px 16px;
             border-radius: 8px;
             font-size: 0.875rem;
             font-weight: 600;
             cursor: pointer;
             border: none;
-            transition: background 0.15s;
+            min-height: 44px;
         }
 
         .btn-modal-cancel {
@@ -1034,11 +1113,12 @@
         /* --- Toast --- */
         .toast {
             position: fixed;
-            bottom: 1.5rem;
-            right: 1.5rem;
+            bottom: 1rem;
+            left: 0.75rem;
+            right: 0.75rem;
             background: #111827;
             color: #fff;
-            padding: 12px 18px;
+            padding: 12px 16px;
             border-radius: 10px;
             font-size: 0.875rem;
             font-weight: 500;
@@ -1047,8 +1127,7 @@
             gap: 10px;
             z-index: 99999;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
-            animation: slideUp 0.25s ease;
-            max-width: 340px;
+            animation: toastIn 0.25s ease;
         }
 
         .toast.hidden {
@@ -1067,10 +1146,10 @@
             font-size: 16px;
         }
 
-        @keyframes slideUp {
+        @keyframes toastIn {
             from {
                 opacity: 0;
-                transform: translateY(12px);
+                transform: translateY(8px);
             }
 
             to {
@@ -1079,32 +1158,86 @@
             }
         }
 
-        /* --- Responsive --- */
-        @media (max-width: 1024px) {
-            .col-hp {
-                display: none;
+        /* =============================================
+                                   BREAKPOINTS
+                                   ============================================= */
+
+        @media (min-width: 480px) {
+            .filter-grid {
+                max-width: 320px;
             }
         }
 
-        @media (max-width: 768px) {
+        @media (min-width: 640px) {
+            .modal-overlay {
+                align-items: center;
+                padding: 1rem;
+            }
 
-            .col-email,
-            .col-verified {
-                display: none;
+            .modal-box {
+                border-radius: 14px;
+                max-width: 440px;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            }
+
+            .toast {
+                left: auto;
+                right: 1.5rem;
+                max-width: 340px;
             }
         }
 
-        @media (max-width: 480px) {
-            .col-nip {
-                display: none;
-            }
-
+        @media (min-width: 768px) {
             .ustadz-page {
-                padding: 1rem 0.75rem 2rem;
+                padding: 1.5rem 1.25rem 3rem;
             }
 
             .page-title {
-                font-size: 1.25rem;
+                font-size: 1.5rem;
+            }
+
+            .stat-value {
+                font-size: 1.75rem;
+            }
+
+            .stat-label {
+                font-size: 0.75rem;
+            }
+
+            .stat-icon {
+                width: 44px;
+                height: 44px;
+            }
+
+            .stat-card {
+                padding: 1.1rem 1.25rem;
+            }
+
+            /* Show table, hide mobile cards */
+            .table-wrap {
+                display: block;
+            }
+
+            .mobile-list {
+                display: none !important;
+            }
+
+            .table-search {
+                max-width: 220px;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .ustadz-page {
+                padding: 1.5rem 1rem 3rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .table-search {
+                max-width: 240px;
             }
         }
     </style>
@@ -1159,6 +1292,142 @@
             $('#ustadz-search').on('keyup', function() {
                 table.search(this.value).draw();
             });
+
+            function renderMobileCards(rows) {
+                const container = $('#mobile-card-list');
+                if (!rows.length) {
+                    container.html('<div class="mobile-loading">Tidak ada data ditemukan</div>');
+                    return;
+                }
+
+                const canEdit = {{ auth()->user()->can('edit_users') ? 'true' : 'false' }};
+                const canDel = {{ auth()->user()->can('delete_users') ? 'true' : 'false' }};
+
+                let html = '';
+                rows.forEach(function(row) {
+                    const color = getAvatarColor(row.name || '');
+                    const initials = getInitials(row.name || '?');
+
+                    // --- status badge ---
+                    const statusMap = {
+                        active: {
+                            cls: 'badge-active',
+                            label: 'Aktif'
+                        },
+                        pending: {
+                            cls: 'badge-pending',
+                            label: 'Pending'
+                        },
+                        inactive: {
+                            cls: 'badge-inactive',
+                            label: 'Tidak Aktif'
+                        },
+                    };
+                    const sKey = (row.status || '').toLowerCase();
+                    const sInfo = statusMap[sKey] || {
+                        cls: 'badge-inactive',
+                        label: row.status
+                    };
+                    const statusBadge = `<span class="badge ${sInfo.cls}">${sInfo.label}</span>`;
+
+                    // --- kelas tags ---
+                    let kelasHtml = '<span class="kelas-empty">Belum ada kelas</span>';
+                    const d = row.classes;
+                    if (d && d !== 'Belum ada kelas' && d !== '' && d !== '-') {
+                        if (typeof d === 'string' && !d.includes('<')) {
+                            const tags = d.split(',').map(k => `<span class="kelas-tag">${k.trim()}</span>`)
+                                .join('');
+                            kelasHtml = tags || kelasHtml;
+                        } else if (typeof d === 'string') {
+                            kelasHtml = d;
+                        }
+                    }
+
+                    // --- contact info ---
+                    const email = row.email ? `<span>${row.email}</span>` : '';
+                    const phone = row.phone ? `<span>${row.phone}</span>` : '';
+                    const contactHtml = (email || phone) ?
+                        `<div class="ustadz-card-contact">${email}${phone}</div>` :
+                        '';
+
+                    // --- verified count ---
+                    const verifiedHtml = `<div class="ustadz-card-verified">
+            <span class="verified-count">${row.verified_today ?? 0}</span>
+            <span>diverifikasi hari ini</span>
+        </div>`;
+
+                    // --- action buttons ---
+                    const showUrl = `/users/ustadz/${row.id}`;
+                    const editUrl = `/users/ustadz/${row.id}/edit`;
+
+                    let actions = `
+            <a href="${showUrl}" class="action-btn view" title="Lihat Detail">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                </svg>
+            </a>`;
+
+                    if (canEdit) {
+                        const toggleTitle = sKey === 'active' ? 'Nonaktifkan' : 'Aktifkan';
+                        const toggleIcon = sKey === 'active' ?
+                            `<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>` :
+                            `<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>`;
+
+                        actions += `
+            <a href="${editUrl}" class="action-btn edit" title="Edit">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+            </a>
+            <button class="action-btn toggle" onclick="toggleUstadzStatus(${row.id})" title="${toggleTitle}">
+                ${toggleIcon}
+            </button>`;
+                    }
+
+                    if (sKey === 'pending') {
+                        actions += `
+            <button class="action-btn activate" onclick="activateUstadz(${row.id})" title="Aktivasi">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M20 6L9 17l-5-5"/>
+                </svg>
+            </button>`;
+                    }
+
+                    if (canDel) {
+                        actions += `
+            <button class="action-btn del" onclick="deleteUstadz(${row.id})" title="Hapus">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6m5 0V4h4v2"/>
+                </svg>
+            </button>`;
+                    }
+
+                    html += `
+        <div class="ustadz-card-item">
+            <div class="ustadz-card-top">
+                <div class="ustadz-card-left">
+                    <div class="avatar" style="background:${color.bg};color:${color.text}">${initials}</div>
+                    <div class="ustadz-card-info">
+                        <div class="ustadz-card-name">${row.name || '—'}</div>
+                        ${row.nip ? `<div class="ustadz-card-nip">${row.nip}</div>` : ''}
+                    </div>
+                </div>
+                ${statusBadge}
+            </div>
+            ${contactHtml}
+            <div class="ustadz-card-kelas">${kelasHtml}</div>
+            <div class="ustadz-card-meta">
+                ${verifiedHtml}
+            </div>
+            <div class="ustadz-card-actions">
+                <div class="action-group">${actions}</div>
+            </div>
+        </div>`;
+                });
+
+                container.html(html);
+            }
 
             table = $('#ustadz-table').DataTable({
                 processing: true,
@@ -1324,10 +1593,11 @@
                         </a>`;
 
                                 // Toggle status button
-                                const toggleIcon = status === 'active' 
-                                    ? `<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>`
-                                    : `<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>`;
-                                const toggleTitle = status === 'active' ? 'Nonaktifkan' : 'Aktifkan';
+                                const toggleIcon = status === 'active' ?
+                                    `<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>` :
+                                    `<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>`;
+                                const toggleTitle = status === 'active' ? 'Nonaktifkan' :
+                                    'Aktifkan';
                                 html += `<button class="action-btn toggle" onclick="toggleUstadzStatus(${d})" title="${toggleTitle}">
                             ${toggleIcon}
                         </button>`;
@@ -1364,6 +1634,9 @@
                 },
                 drawCallback: function(settings) {
                     renderFooter(settings);
+                    renderMobileCards(this.api().rows({
+                        page: 'current'
+                    }).data().toArray());
                 }
             });
 

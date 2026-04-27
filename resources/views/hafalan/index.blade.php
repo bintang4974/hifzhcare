@@ -101,6 +101,11 @@
                 </div>
             </div>
 
+            {{-- Mobile Card List (< 768px) --}}
+            <div class="mobile-list" id="mobile-card-list">
+                <div class="mobile-loading">Memuat data...</div>
+            </div>
+
             <div class="table-wrap">
                 <table id="hafalan-table">
                     <thead>
@@ -243,13 +248,17 @@
 
     <style>
         /* =============================================
-       HAFALAN PAGE — CLEAN REDESIGN
-       ============================================= */
+                       HAFALAN PAGE — MOBILE-FIRST REDESIGN
+                       ============================================= */
+
+        * {
+            box-sizing: border-box;
+        }
 
         .hafalan-page {
             max-width: 1280px;
             margin: 0 auto;
-            padding: 1.5rem 1rem 3rem;
+            padding: 1rem 0.875rem 3rem;
         }
 
         /* --- Page Header --- */
@@ -257,13 +266,12 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
         }
 
         .page-title {
-            font-size: 1.5rem;
+            font-size: 1.25rem;
             font-weight: 700;
             color: #111827;
             margin: 0;
@@ -271,26 +279,26 @@
         }
 
         .page-subtitle {
-            font-size: 0.875rem;
+            font-size: 0.8125rem;
             color: #6b7280;
-            margin: 4px 0 0;
+            margin: 3px 0 0;
         }
 
         .btn-primary {
             display: inline-flex;
             align-items: center;
-            gap: 7px;
-            padding: 9px 18px;
+            gap: 6px;
+            padding: 8px 14px;
             background: #2563eb;
             color: #fff;
             border: none;
             border-radius: 8px;
-            font-size: 0.875rem;
+            font-size: 0.8125rem;
             font-weight: 600;
             cursor: pointer;
             text-decoration: none;
             white-space: nowrap;
-            transition: background 0.15s;
+            flex-shrink: 0;
         }
 
         .btn-primary:hover {
@@ -309,37 +317,25 @@
 
         /* --- Filter Card --- */
         .filter-card {
-            padding: 1.25rem;
-            margin-bottom: 1.25rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
         }
 
         .filter-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-bottom: 12px;
-        }
-
-        @media (min-width: 640px) {
-            .filter-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
-        }
-
-        @media (min-width: 1024px) {
-            .filter-grid {
-                grid-template-columns: repeat(6, 1fr);
-            }
+            gap: 8px;
+            margin-bottom: 10px;
         }
 
         .filter-label {
             display: block;
-            font-size: 0.7rem;
+            font-size: 0.6875rem;
             font-weight: 600;
             color: #6b7280;
             text-transform: uppercase;
             letter-spacing: 0.4px;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
         }
 
         .filter-input {
@@ -350,7 +346,6 @@
             font-size: 0.8125rem;
             color: #374151;
             background: #fff;
-            transition: border-color 0.15s, box-shadow 0.15s;
             -webkit-appearance: auto;
         }
 
@@ -366,16 +361,17 @@
         }
 
         .btn-filter {
+            flex: 1;
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 6px;
-            padding: 8px 20px;
+            padding: 8px 16px;
             border-radius: 7px;
             font-size: 0.8125rem;
             font-weight: 600;
             cursor: pointer;
             border: none;
-            transition: background 0.15s;
         }
 
         .btn-apply {
@@ -406,14 +402,13 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 1rem 1.25rem;
+            padding: 0.875rem 1rem;
             border-bottom: 1px solid #e5e7eb;
-            flex-wrap: wrap;
-            gap: 10px;
+            gap: 8px;
         }
 
         .table-title {
-            font-size: 1rem;
+            font-size: 0.9375rem;
             font-weight: 700;
             color: #111827;
             margin: 0;
@@ -423,59 +418,50 @@
             position: relative;
             display: flex;
             align-items: center;
+            flex: 1;
+            max-width: 200px;
         }
 
         .search-icon {
             position: absolute;
-            left: 10px;
+            left: 9px;
             color: #9ca3af;
             pointer-events: none;
         }
 
         .search-input {
-            padding: 7px 12px 7px 32px;
+            width: 100%;
+            padding: 7px 10px 7px 30px;
             border: 1px solid #d1d5db;
             border-radius: 7px;
             font-size: 0.8125rem;
             color: #374151;
-            width: 220px;
-            transition: border-color 0.15s, box-shadow 0.15s;
         }
 
         .search-input:focus {
             outline: none;
             border-color: #2563eb;
             box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-            width: 260px;
         }
 
-        @media (max-width: 480px) {
-            .search-input {
-                width: 160px;
-            }
-
-            .search-input:focus {
-                width: 190px;
-            }
-        }
-
-        /* --- DataTable Overrides --- */
+        /* --- DESKTOP TABLE (≥768px) --- */
         .table-wrap {
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
+            display: none;
+            /* hidden on mobile */
         }
 
         #hafalan-table {
             width: 100% !important;
             border-collapse: collapse;
             font-size: 0.8125rem;
-            min-width: 720px;
         }
 
         #hafalan-table thead th {
             padding: 10px 14px;
             background: #f9fafb;
-            font-size: 0.7rem;
+            font-size: 0.6875rem;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -513,7 +499,102 @@
             background: #f9fafb;
         }
 
-        /* DataTable layout controls — hidden, replaced by custom */
+        /* --- MOBILE CARD LIST (< 768px) --- */
+        .mobile-list {
+            display: block;
+        }
+
+        .mobile-list-empty {
+            padding: 2rem 1rem;
+            text-align: center;
+            color: #9ca3af;
+            font-size: 0.875rem;
+        }
+
+        .hafalan-card-item {
+            padding: 0.875rem 1rem;
+            border-bottom: 1px solid #f3f4f6;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .hafalan-card-item:last-child {
+            border-bottom: none;
+        }
+
+        .hafalan-card-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .hafalan-card-left {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .hafalan-card-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .hafalan-card-name {
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: #111827;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .hafalan-card-class {
+            font-size: 0.6875rem;
+            color: #9ca3af;
+        }
+
+        .hafalan-card-badges {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .hafalan-card-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .hafalan-card-surah {
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .hafalan-card-ayat {
+            font-size: 0.6875rem;
+            color: #9ca3af;
+        }
+
+        .hafalan-card-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .hafalan-card-date {
+            font-size: 0.6875rem;
+            color: #9ca3af;
+        }
+
+        /* DataTable hidden controls */
         .dataTables_wrapper .dataTables_length,
         .dataTables_wrapper .dataTables_filter,
         .dataTables_wrapper .dataTables_info,
@@ -521,18 +602,16 @@
             display: none !important;
         }
 
-        /* Processing */
         .dataTables_processing {
             background: rgba(255, 255, 255, 0.9) !important;
             border: 1px solid #e5e7eb !important;
             border-radius: 8px !important;
             font-size: 0.8125rem !important;
             color: #6b7280 !important;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
             padding: 12px 20px !important;
         }
 
-        /* --- Santri Cell --- */
+        /* --- Shared Cell Components --- */
         .santri-cell {
             display: flex;
             align-items: center;
@@ -549,7 +628,18 @@
             font-size: 11px;
             font-weight: 700;
             flex-shrink: 0;
-            letter-spacing: 0.3px;
+        }
+
+        .avatar-sm {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 700;
+            flex-shrink: 0;
         }
 
         .santri-name {
@@ -565,7 +655,6 @@
             margin-top: 1px;
         }
 
-        /* --- Surah Cell --- */
         .surah-name {
             font-weight: 600;
             color: #111827;
@@ -582,11 +671,10 @@
         .badge {
             display: inline-flex;
             align-items: center;
-            padding: 3px 10px;
+            padding: 2px 8px;
             border-radius: 20px;
             font-size: 0.6875rem;
             font-weight: 600;
-            letter-spacing: 0.2px;
             white-space: nowrap;
         }
 
@@ -615,7 +703,6 @@
             color: #991b1b;
         }
 
-        /* --- Juz --- */
         .juz-num {
             display: inline-flex;
             align-items: center;
@@ -629,7 +716,6 @@
             color: #374151;
         }
 
-        /* --- Audio Button --- */
         .audio-btn {
             width: 30px;
             height: 30px;
@@ -641,18 +727,12 @@
             align-items: center;
             justify-content: center;
             color: #6b7280;
-            transition: all 0.15s;
         }
 
-        .audio-btn:hover {
-            background: #f0fdf4;
-            border-color: #bbf7d0;
-            color: #16a34a;
-        }
-
+        .audio-btn:hover,
         .audio-btn.playing {
             background: #f0fdf4;
-            border-color: #86efac;
+            border-color: #bbf7d0;
             color: #16a34a;
         }
 
@@ -661,14 +741,12 @@
             font-size: 0.875rem;
         }
 
-        /* --- Date --- */
         .date-text {
             font-size: 0.75rem;
             color: #6b7280;
             white-space: nowrap;
         }
 
-        /* --- Verified info --- */
         .verified-by {
             font-size: 0.75rem;
             font-weight: 600;
@@ -698,12 +776,9 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.15s;
             text-decoration: none;
-        }
-
-        .action-btn:hover {
-            border-color: transparent;
+            min-width: 30px;
+            /* prevent shrink on mobile */
         }
 
         .action-btn.view {
@@ -742,12 +817,12 @@
             border-color: #fecaca;
         }
 
-        /* --- Table Footer Custom --- */
+        /* --- Table Footer / Pagination --- */
         .table-footer-info {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px 1.25rem;
+            padding: 10px 1rem;
             border-top: 1px solid #e5e7eb;
             background: #f9fafb;
             flex-wrap: wrap;
@@ -777,7 +852,6 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.15s;
         }
 
         .pg-btn:hover:not(.disabled):not(.active) {
@@ -802,9 +876,10 @@
             background: rgba(0, 0, 0, 0.45);
             z-index: 9999;
             display: flex;
-            align-items: center;
+            align-items: flex-end;
+            /* bottom sheet on mobile */
             justify-content: center;
-            padding: 1rem;
+            padding: 0;
         }
 
         .modal-overlay.hidden {
@@ -813,23 +888,23 @@
 
         .modal-box {
             background: #fff;
-            border-radius: 14px;
-            padding: 1.5rem;
+            border-radius: 14px 14px 0 0;
+            padding: 1.5rem 1.25rem;
             width: 100%;
-            max-width: 420px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-            animation: modalIn 0.2s ease;
+            max-width: 100%;
+            box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.12);
+            animation: slideUp 0.25s ease;
         }
 
-        @keyframes modalIn {
+        @keyframes slideUp {
             from {
                 opacity: 0;
-                transform: scale(0.96) translateY(-8px);
+                transform: translateY(20px);
             }
 
             to {
                 opacity: 1;
-                transform: scale(1) translateY(0);
+                transform: translateY(0);
             }
         }
 
@@ -915,7 +990,6 @@
             color: #374151;
             resize: vertical;
             font-family: inherit;
-            transition: border-color 0.15s, box-shadow 0.15s;
         }
 
         .form-textarea:focus {
@@ -936,13 +1010,14 @@
             align-items: center;
             justify-content: center;
             gap: 6px;
-            padding: 9px 16px;
+            padding: 11px 16px;
             border-radius: 8px;
             font-size: 0.875rem;
             font-weight: 600;
             cursor: pointer;
             border: none;
-            transition: background 0.15s;
+            min-height: 44px;
+            /* touch target */
         }
 
         .btn-modal-cancel {
@@ -975,11 +1050,12 @@
         /* --- Toast --- */
         .toast {
             position: fixed;
-            bottom: 1.5rem;
-            right: 1.5rem;
+            bottom: 1rem;
+            left: 0.75rem;
+            right: 0.75rem;
             background: #111827;
             color: #fff;
-            padding: 12px 18px;
+            padding: 12px 16px;
             border-radius: 10px;
             font-size: 0.875rem;
             font-weight: 500;
@@ -988,8 +1064,7 @@
             gap: 10px;
             z-index: 99999;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
-            animation: slideUp 0.25s ease;
-            max-width: 340px;
+            animation: toastIn 0.25s ease;
         }
 
         .toast.hidden {
@@ -1008,10 +1083,10 @@
             font-size: 16px;
         }
 
-        @keyframes slideUp {
+        @keyframes toastIn {
             from {
                 opacity: 0;
-                transform: translateY(12px);
+                transform: translateY(8px);
             }
 
             to {
@@ -1020,27 +1095,79 @@
             }
         }
 
-        /* --- Responsive Columns --- */
-        @media (max-width: 768px) {
+        /* --- Loading overlay for mobile list --- */
+        .mobile-loading {
+            padding: 2rem 1rem;
+            text-align: center;
+            color: #9ca3af;
+            font-size: 0.875rem;
+        }
 
-            .col-juz,
-            .col-audio,
-            .col-verifikasi {
-                display: none;
+        /* =============================================
+                       BREAKPOINTS — TABLET & DESKTOP
+                       ============================================= */
+
+        @media (min-width: 640px) {
+            .filter-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .btn-filter {
+                flex: none;
+            }
+
+            .modal-overlay {
+                align-items: center;
+                padding: 1rem;
+            }
+
+            .modal-box {
+                border-radius: 14px;
+                max-width: 440px;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            }
+
+            .toast {
+                left: auto;
+                right: 1.5rem;
+                max-width: 340px;
             }
         }
 
-        @media (max-width: 480px) {
-            .col-tanggal {
-                display: none;
-            }
-
+        @media (min-width: 768px) {
             .hafalan-page {
-                padding: 1rem 0.75rem 2rem;
+                padding: 1.5rem 1.25rem 3rem;
             }
 
             .page-title {
-                font-size: 1.25rem;
+                font-size: 1.5rem;
+            }
+
+            /* Show table, hide mobile cards */
+            .table-wrap {
+                display: block;
+            }
+
+            .mobile-list {
+                display: none !important;
+            }
+
+            .filter-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .hafalan-page {
+                padding: 1.5rem 1rem 3rem;
+            }
+
+            .filter-grid {
+                grid-template-columns: repeat(6, 1fr);
+            }
+
+            .table-search {
+                max-width: 240px;
             }
         }
     </style>
@@ -1106,6 +1233,92 @@
             $('#hafalan-search').on('keyup', function() {
                 table.search(this.value).draw();
             });
+
+            function renderMobileCards(rows) {
+                const container = $('#mobile-card-list');
+                if (!rows.length) {
+                    container.html('<div class="mobile-loading">Tidak ada data ditemukan</div>');
+                    return;
+                }
+
+                const canAct = {{ auth()->user()->can('verify_hafalan') ? 'true' : 'false' }};
+                const canDel = {{ auth()->user()->can('delete_hafalan') ? 'true' : 'false' }};
+
+                let html = '';
+                rows.forEach(function(row, idx) {
+                    const color = getAvatarColor(row.user_name || '');
+                    const initials = getInitials(row.user_name || '?');
+                    const kelas = row.class_name || '';
+                    const status = (row.status || '').toLowerCase();
+                    const type = (row.type || '').toLowerCase();
+                    const typeLabel = type === 'murajah' ? "Muraja'ah" : 'Setoran';
+                    const typeCls = type === 'murajah' ? 'badge-murajah' : 'badge-setoran';
+                    const statusMap = {
+                        pending: 'badge-pending',
+                        verified: 'badge-verified',
+                        rejected: 'badge-rejected'
+                    };
+                    const statusLabel = {
+                        pending: 'Pending',
+                        verified: 'Verified',
+                        rejected: 'Rejected'
+                    };
+                    const surahInfo = row.surah_info || '—';
+                    const ayat = row.ayat_range ? `Ayat ${row.ayat_range}` : '';
+                    const count = row.ayat_count ? `${row.ayat_count} ayat` : '';
+                    const ayatMeta = [ayat, count].filter(Boolean).join(' · ');
+                    const dateStr = row.hafalan_date ? formatDate(row.hafalan_date) : '—';
+
+                    let actions = `<a href="/hafalan/${row.id}" class="action-btn view" title="Lihat Detail">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+            </svg></a>`;
+
+                    if (canAct && status === 'pending') {
+                        actions += `<button class="action-btn verify" onclick="verifyHafalan(${row.id})" title="Verifikasi">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M20 6L9 17l-5-5"/></svg></button>
+            <button class="action-btn reject" onclick="rejectHafalan(${row.id})" title="Tolak">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M18 6L6 18M6 6l12 12"/></svg></button>`;
+                    }
+
+                    if (canDel) {
+                        actions += `<button class="action-btn del" onclick="deleteHafalan(${row.id})" title="Hapus">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6m5 0V4h4v2"/></svg></button>`;
+                    }
+
+                    html += `
+        <div class="hafalan-card-item">
+            <div class="hafalan-card-top">
+                <div class="hafalan-card-left">
+                    <div class="avatar-sm" style="background:${color.bg};color:${color.text}">${initials}</div>
+                    <div class="hafalan-card-info">
+                        <div class="hafalan-card-name">${row.user_name || '—'}</div>
+                        <div class="hafalan-card-class">${kelas}</div>
+                    </div>
+                </div>
+                <div class="hafalan-card-badges">
+                    <span class="badge ${statusMap[status] || 'badge-pending'}">${statusLabel[status] || status}</span>
+                </div>
+            </div>
+            <div class="hafalan-card-meta">
+                <div>
+                    <div class="hafalan-card-surah">${surahInfo}</div>
+                    ${ayatMeta ? `<div class="hafalan-card-ayat">${ayatMeta}</div>` : ''}
+                </div>
+                <span class="badge ${typeCls}">${typeLabel}</span>
+            </div>
+            <div class="hafalan-card-meta">
+                <span class="hafalan-card-date">${dateStr}</span>
+                <div class="action-group">${actions}</div>
+            </div>
+        </div>`;
+                });
+
+                container.html(html);
+            }
 
             table = $('#hafalan-table').DataTable({
                 processing: true,
@@ -1322,6 +1535,9 @@
                 },
                 drawCallback: function(settings) {
                     renderFooter(settings);
+                    renderMobileCards(this.api().rows({
+                        page: 'current'
+                    }).data().toArray());
                 }
             });
 

@@ -267,12 +267,14 @@ class SuperAdminDashboardController extends Controller
             'max_santri' => 'nullable|integer|min:0',
             'established_year' => 'nullable|integer|min:1900|max:'.date('Y'),
             'status' => 'required|in:pending,active,inactive',
+            'subscription_expired_at' => 'nullable|date|after:today',
+            'activated_at' => 'nullable|date|before_or_equal:today',
         ]);
 
         $pesantren = Pesantren::create($validated);
 
         return redirect()
-            ->route('superadmin.pesantrens')
+            ->route('superadmin.pesantrens.index')
             ->with('success', 'Pesantren berhasil ditambahkan!');
     }
 
@@ -366,12 +368,14 @@ class SuperAdminDashboardController extends Controller
             'max_santri' => 'nullable|integer|min:0',
             'established_year' => 'nullable|integer|min:1900|max:'.date('Y'),
             'status' => 'required|in:pending,active,inactive',
+            'subscription_expired_at' => 'nullable|date|after:today',
+            'activated_at' => 'nullable|date|before_or_equal:today',
         ]);
 
         $pesantren->update($validated);
 
         return redirect()
-            ->route('pesantrens.show', $id)
+            ->route('superadmin.pesantrens.show', $id)
             ->with('success', 'Pesantren berhasil diupdate!');
     }
 
