@@ -20,7 +20,13 @@ class CreateSantriRequest extends FormRequest
      */
     public function rules(): array
     {
+        // Get pesantren_id from request or auth user
+        $pesantrenId = $this->pesantren_id ?? auth()->user()->pesantren_id;
+        
         return [
+            // Pesantren (required for super admin)
+            'pesantren_id' => ['nullable', 'exists:pesantrens,id'],
+            
             // User data
             'name' => ['required', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'unique:users,email'],
@@ -28,7 +34,7 @@ class CreateSantriRequest extends FormRequest
             'password' => ['nullable', 'string', 'min:8'],
 
             // Santri profile
-            'nis' => ['required', 'string', 'max:50', Rule::unique('santri_profiles', 'nis')->where('pesantren_id', auth()->user()->pesantren_id)],
+            'nis' => ['required', 'string', 'max:50', Rule::unique('santri_profiles', 'nis')->where('pesantren_id', $pesantrenId)],
             'birth_date' => ['required', 'date', 'before:today'],
             'gender' => ['required', 'in:L,P'],
             'address' => ['required', 'string', 'max:500'],
@@ -52,6 +58,7 @@ class CreateSantriRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'pesantren_id.exists' => 'Pesantren yang dipilih tidak valid.',
             'name.required' => 'Nama santri harus diisi.',
             'phone.required' => 'Nomor telepon harus diisi.',
             'phone.unique' => 'Nomor telepon sudah terdaftar.',

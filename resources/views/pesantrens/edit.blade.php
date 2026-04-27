@@ -11,7 +11,7 @@
                 <h1 class="text-3xl font-bold text-gray-900">Edit Pesantren</h1>
                 <p class="text-gray-600 mt-1">Update data pesantren {{ $pesantren->name }}</p>
             </div>
-            <a href="{{ route('superadmin.pesantrens') }}"
+            <a href="{{ route('superadmin.pesantrens.show', $pesantren->id) }}"
                 class="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-xl shadow-md transition">
                 <i class="fas fa-arrow-left mr-2"></i>Kembali
             </a>
@@ -219,6 +219,52 @@
                 </div>
             </div>
 
+            <!-- Informasi Berlangganan -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center mb-6">
+                    <div
+                        class="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center text-white mr-4">
+                        <i class="fas fa-credit-card text-2xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900">Informasi Berlangganan</h3>
+                        <p class="text-sm text-gray-600">Data subscription dan aktivasi pesantren</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Tanggal Aktivasi -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-power-off mr-1 text-green-600"></i>
+                            Tanggal Aktivasi
+                        </label>
+                        <input type="date" name="activated_at" value="{{ old('activated_at', $pesantren->activated_at?->format('Y-m-d')) }}"
+                            class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring focus:ring-green-200 @error('activated_at') border-red-500 @enderror"
+                            placeholder="Pilih tanggal aktivasi">
+                        <p class="mt-1 text-xs text-gray-500">Tanggal pesantren mulai beroperasi dalam sistem</p>
+                        @error('activated_at')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <!-- Tanggal Berakhir Subscription -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-calendar-times mr-1 text-green-600"></i>
+                            Tanggal Berakhir Subscription
+                        </label>
+                        <input type="date" name="subscription_expired_at" value="{{ old('subscription_expired_at', $pesantren->subscription_expired_at?->format('Y-m-d')) }}"
+                            class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring focus:ring-green-200 @error('subscription_expired_at') border-red-500 @enderror"
+                            placeholder="Pilih tanggal expired">
+                        <p class="mt-1 text-xs text-gray-500">Tanggal subscription berakhir (kosongkan jika tidak ada batasan)</p>
+                        @error('subscription_expired_at')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+            </div>
+
             <!-- Current Stats Info -->
             <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg">
                 <div class="flex">
@@ -241,7 +287,7 @@
 
             <!-- Submit Buttons -->
             <div class="flex gap-4">
-                <a href="{{ route('superadmin.pesantrens') }}"
+                <a href="{{ route('superadmin.pesantrens.show', $pesantren->id) }}"
                     class="flex-1 text-center px-6 py-4 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl transition shadow-md">
                     <i class="fas fa-times mr-2"></i>Batal
                 </a>

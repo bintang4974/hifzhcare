@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\User\{CreateSantriRequest, UpdateSantriRequest};
-use App\Models\{Classes, SantriProfile, WaliProfile};
+use App\Models\{Classes, Pesantren, SantriProfile, WaliProfile};
 use App\Services\User\UserService;
 use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
@@ -141,8 +141,14 @@ class SantriController extends Controller
     {
         $walis = WaliProfile::with('user')->get();
         $classes = Classes::where('status', 'active')->get(['id', 'name']);
+        
+        // For super admin, show all pesantrens
+        $pesantrens = null;
+        if (auth()->user()->hasRole('Super Admin')) {
+            $pesantrens = Pesantren::where('status', 'active')->get(['id', 'name', 'code']);
+        }
 
-        return view('users.santri.create', compact('walis', 'classes'));
+        return view('users.santri.create', compact('walis', 'classes', 'pesantrens'));
     }
 
     /**
@@ -151,9 +157,19 @@ class SantriController extends Controller
     public function store(CreateSantriRequest $request)
     {
         try {
+            // Get pesantren_id from request (super admin) or from auth user
+            $pesantrenId = $request->pesantren_id ?? auth()->user()->pesantren_id;
+            
+            // Verify pesantren_id is not null
+            if (!$pesantrenId) {
+                return back()
+                    ->withInput()
+                    ->with('error', 'Pesantren harus dipilih');
+            }
+            
             // Prepare data
             $userData = [
-                'pesantren_id' => auth()->user()->pesantren_id,
+                'pesantren_id' => $pesantrenId,
                 'name' => $request->name,
                 'email' => $request->email,
                 'phone' => $request->phone,
@@ -220,7 +236,7 @@ class SantriController extends Controller
      */
     public function edit(SantriProfile $santri)
     {
-        $santri->load('user');
+        $santri->load('user', 'wali.user');
         $walis = WaliProfile::with('user')->get();
         $classes = Classes::where('status', 'active')->get(['id', 'name']);
 
@@ -249,6 +265,41 @@ class SantriController extends Controller
                 'address' => $request->address,
                 'entry_date' => $request->entry_date,
             ]);
+
+            // Handle wali update/change
+            if ($request->filled('wali_id')) {
+                // Use existing wali
+                $santri->update(['wali_id' => $request->wali_id]);
+            } elseif ($request->filled('wali_name')) {
+                // Create or update wali
+                $waliData = [
+                    'user' => [
+                        'pesantren_id' => $santri->user->pesantren_id,
+                        'name' => $request->wali_name,
+                        'email' => $request->wali_email,
+                        'phone' => $request->wali_phone,
+                    ],
+                    'profile' => [
+                        'nik' => $request->wali_nik,
+                        'relation' => $request->wali_relation,
+                        'occupation' => $request->wali_occupation,
+                        'address' => $request->wali_address,
+                    ],
+                ];
+
+                // If santri already has a wali, update it
+                if ($santri->wali) {
+                    $santri->wali->user->update($waliData['user']);
+                    $santri->wali->update($waliData['profile']);
+                } else {
+                    // Create new wali
+                    $wali = $this->userService->createWali(
+                        $waliData['user'],
+                        $waliData['profile']
+                    );
+                    $santri->update(['wali_id' => $wali->waliProfile->id]);
+                }
+            }
 
             return redirect()
                 ->route('users.santri.index')

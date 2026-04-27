@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Certificate;
+use App\Models\DonationSetting;
 use App\Models\Hafalan;
 use App\Models\Pesantren;
 use App\Models\SantriProfile;
@@ -266,12 +267,14 @@ class SuperAdminDashboardController extends Controller
             'max_santri' => 'nullable|integer|min:0',
             'established_year' => 'nullable|integer|min:1900|max:'.date('Y'),
             'status' => 'required|in:pending,active,inactive',
+            'subscription_expired_at' => 'nullable|date|after:today',
+            'activated_at' => 'nullable|date|before_or_equal:today',
         ]);
 
         $pesantren = Pesantren::create($validated);
 
         return redirect()
-            ->route('superadmin.pesantrens')
+            ->route('superadmin.pesantrens.index')
             ->with('success', 'Pesantren berhasil ditambahkan!');
     }
 
@@ -365,12 +368,14 @@ class SuperAdminDashboardController extends Controller
             'max_santri' => 'nullable|integer|min:0',
             'established_year' => 'nullable|integer|min:1900|max:'.date('Y'),
             'status' => 'required|in:pending,active,inactive',
+            'subscription_expired_at' => 'nullable|date|after:today',
+            'activated_at' => 'nullable|date|before_or_equal:today',
         ]);
 
         $pesantren->update($validated);
 
         return redirect()
-            ->route('pesantrens.show', $id)
+            ->route('superadmin.pesantrens.show', $id)
             ->with('success', 'Pesantren berhasil diupdate!');
     }
 
@@ -432,12 +437,24 @@ class SuperAdminDashboardController extends Controller
     {
         $pesantren = Pesantren::findOrFail($id);
 
+        $donationSetting = DonationSetting::firstOrCreate(
+            ['pesantren_id' => $pesantren->id],
+            [
+                'platform_fee_percentage' => 3,
+                'pesantren_fee_percentage' => 10,
+                'minimum_withdrawal' => 50000,
+                'auto_approve_withdrawal' => false,
+                'donation_enabled' => (bool) ($pesantren->is_appreciation_fund_enabled ?? true),
+                'donation_message' => null,
+            ]
+        );
+
         // Ensure settings is decoded
         if (is_string($pesantren->settings)) {
             $pesantren->settings = json_decode($pesantren->settings, true) ?? [];
         }
 
-        return view('pesantrens.settings', compact('pesantren'));
+        return view('pesantrens.settings', compact('pesantren', 'donationSetting'));
     }
 
     /**
@@ -446,6 +463,10 @@ class SuperAdminDashboardController extends Controller
     public function updateSettings(Request $request, $id)
     {
         $pesantren = Pesantren::findOrFail($id);
+
+        $validatedDonation = $request->validate([
+            'donation_message' => 'nullable|string|max:500',
+        ]);
 
         $settings = [
             // Basic settings
@@ -471,6 +492,21 @@ class SuperAdminDashboardController extends Controller
         ];
 
         $pesantren->update(['settings' => $settings]);
+
+        $donationEnabled = $request->has('donation_enabled');
+
+        DonationSetting::updateOrCreate(
+            ['pesantren_id' => $pesantren->id],
+            [
+                'donation_enabled' => $donationEnabled,
+                'donation_message' => $validatedDonation['donation_message'] ?? null,
+            ]
+        );
+
+        // Keep legacy toggle in sync if used elsewhere in the app.
+        $pesantren->update([
+            'is_appreciation_fund_enabled' => $donationEnabled,
+        ]);
 
         return redirect()
             ->route('superadmin.pesantrens.settings', $id)

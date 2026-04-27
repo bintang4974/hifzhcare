@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\User\CreateUstadzRequest;
 use App\Http\Requests\User\UpdateUstadzRequest;
+use App\Models\Pesantren;
 use App\Models\User;
 use App\Models\UstadzProfile;
 use App\Services\User\UserService;
@@ -162,7 +163,14 @@ class UstadzController extends Controller
     public function create()
     {
         $this->authorize('create_users');
-        return view('users.ustadz.create');
+        $pesantrens = null;
+        
+        // If Super Admin, load all active pesantrens for selection
+        if (auth()->user()->isSuperAdmin()) {
+            $pesantrens = Pesantren::where('status', 'active')->get(['id', 'name', 'code']);
+        }
+        
+        return view('users.ustadz.create', compact('pesantrens'));
     }
 
     /**
@@ -171,6 +179,11 @@ class UstadzController extends Controller
     public function store(CreateUstadzRequest $request)
     {
         try {
+            // Get pesantren_id: from request (Super Admin) or session (Regular Admin)
+            $pesantrenId = auth()->user()->isSuperAdmin() 
+                ? $request->pesantren_id 
+                : session('current_pesantren_id');
+            
             $userData = [
                 'name' => $request->name,
                 'email' => $request->email,
@@ -178,7 +191,7 @@ class UstadzController extends Controller
                 'password' => $request->password ?: Str::random(8),
                 'user_type' => 'ustadz',
                 'status' => 'active',
-                'pesantren_id' => session('current_pesantren_id'),
+                'pesantren_id' => $pesantrenId,
             ];
 
             $profileData = [
@@ -186,7 +199,7 @@ class UstadzController extends Controller
                 'specialization' => $request->specialization,
                 'join_date' => $request->join_date,
                 'address' => $request->address,
-                'pesantren_id' => session('current_pesantren_id'),
+                'pesantren_id' => $pesantrenId,
             ];
 
             $user = $this->userService->createUstadz($userData, $profileData);

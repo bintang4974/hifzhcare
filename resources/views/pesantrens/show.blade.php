@@ -15,7 +15,7 @@
                 </p>
             </div>
             <div class="flex gap-3">
-                <a href="{{ route('superadmin.pesantrens') }}"
+                <a href="{{ route('superadmin.pesantrens.index') }}"
                     class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg shadow-md transition">
                     <i class="fas fa-arrow-left mr-2"></i>Kembali
                 </a>
@@ -206,6 +206,34 @@
                                 {{ $pesantren->updated_at->format('d M Y H:i') }}</p>
                         </div>
                     </div>
+
+                    @if ($pesantren->activated_at)
+                        <div class="flex items-start">
+                            <i class="fas fa-power-off text-gray-400 mt-1 mr-3"></i>
+                            <div>
+                                <p class="text-xs text-gray-500">Tanggal Aktivasi</p>
+                                <p class="text-sm font-semibold text-gray-900">
+                                    {{ $pesantren->activated_at->format('d M Y') }}</p>
+                            </div>
+                        </div>
+                    @endif
+
+                    @if ($pesantren->subscription_expired_at)
+                        <div class="flex items-start">
+                            <i class="fas fa-{{ \Carbon\Carbon::now()->isBefore($pesantren->subscription_expired_at) ? 'calendar-check text-green-500' : 'exclamation-triangle text-red-500' }} mt-1 mr-3"></i>
+                            <div>
+                                <p class="text-xs text-gray-500">Subscription Berakhir</p>
+                                <p class="text-sm font-semibold {{ \Carbon\Carbon::now()->isBefore($pesantren->subscription_expired_at) ? 'text-green-700' : 'text-red-700' }}">
+                                    {{ $pesantren->subscription_expired_at->format('d M Y') }}
+                                    @if (\Carbon\Carbon::now()->isBefore($pesantren->subscription_expired_at))
+                                        <span class="text-xs text-green-600">({{ $pesantren->subscription_expired_at->diffForHumans() }})</span>
+                                    @else
+                                        <span class="text-xs text-red-600">(Sudah expired)</span>
+                                    @endif
+                                </p>
+                            </div>
+                        </div>
+                    @endif
                 </div>
             </div>
 
@@ -223,6 +251,44 @@
                 @endif
             </div>
         </div>
+
+        <!-- Subscription Status Alert -->
+        @if ($pesantren->subscription_expired_at)
+            @if (\Carbon\Carbon::now()->isBefore($pesantren->subscription_expired_at))
+                @php
+                    $daysLeft = \Carbon\Carbon::now()->diffInDays($pesantren->subscription_expired_at, false);
+                @endphp
+                @if ($daysLeft <= 30)
+                    <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-lg">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-exclamation-circle text-yellow-600 text-xl"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm text-yellow-800">
+                                    <strong>Peringatan:</strong> Subscription pesantren ini akan berakhir dalam {{ $daysLeft }} hari
+                                    ({{ $pesantren->subscription_expired_at->format('d M Y') }}). Hubungi administrator untuk perpanjangan subscription.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+            @else
+                <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-times-circle text-red-600 text-xl"></i>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-red-800">
+                                <strong>Subscription Expired:</strong> Subscription pesantren ini telah berakhir pada 
+                                {{ $pesantren->subscription_expired_at->format('d M Y') }}. Hubungi administrator untuk perpanjangan subscription.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            @endif
+        @endif
 
         <!-- Detailed Stats -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">

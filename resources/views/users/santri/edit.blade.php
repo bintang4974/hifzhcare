@@ -153,11 +153,30 @@
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
+
+                    <!-- Status -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-info-circle mr-1 text-blue-600"></i>
+                            Status <span class="text-red-500">*</span>
+                        </label>
+                        <select name="status" required
+                            class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 @error('status') border-red-500 @enderror">
+                            <option value="">Pilih Status</option>
+                            <option value="pending" {{ old('status', $santri->user->status) == 'pending' ? 'selected' : '' }}>Pending</option>
+                            <option value="active" {{ old('status', $santri->user->status) == 'active' ? 'selected' : '' }}>Aktif</option>
+                            <option value="inactive" {{ old('status', $santri->user->status) == 'inactive' ? 'selected' : '' }}>Tidak Aktif</option>
+                            <option value="graduated" {{ old('status', $santri->user->status) == 'graduated' ? 'selected' : '' }}>Lulus</option>
+                        </select>
+                        @error('status')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
                 </div>
             </div>
 
             <!-- Data Wali Section -->
-            <div class="bg-white rounded-xl shadow-lg p-6" x-data="{ changeWali: false }">
+            <div class="bg-white rounded-xl shadow-lg p-6" x-data="{ changeWali: false, useExisting: false }">
                 <div class="flex items-center justify-between mb-6">
                     <div class="flex items-center">
                         <div
@@ -227,7 +246,7 @@
                                     <i class="fas fa-user mr-1 text-green-600"></i>
                                     Nama Wali
                                 </label>
-                                <input type="text" name="wali_name" value="{{ old('wali_name') }}"
+                                <input type="text" name="wali_name" value="{{ old('wali_name', $santri->wali?->user?->name) }}"
                                     class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring focus:ring-green-200"
                                     placeholder="Masukkan nama wali">
                             </div>
@@ -241,9 +260,9 @@
                                 <select name="wali_relation"
                                     class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring focus:ring-green-200">
                                     <option value="">Pilih Hubungan</option>
-                                    <option value="ayah">Ayah</option>
-                                    <option value="ibu">Ibu</option>
-                                    <option value="wali">Wali</option>
+                                    <option value="ayah" {{ old('wali_relation', $santri->wali?->relation) == 'ayah' ? 'selected' : '' }}>Ayah</option>
+                                    <option value="ibu" {{ old('wali_relation', $santri->wali?->relation) == 'ibu' ? 'selected' : '' }}>Ibu</option>
+                                    <option value="wali" {{ old('wali_relation', $santri->wali?->relation) == 'wali' ? 'selected' : '' }}>Wali</option>
                                 </select>
                             </div>
 
@@ -253,7 +272,7 @@
                                     <i class="fas fa-id-card mr-1 text-green-600"></i>
                                     NIK (Opsional)
                                 </label>
-                                <input type="text" name="wali_nik" value="{{ old('wali_nik') }}" maxlength="16"
+                                <input type="text" name="wali_nik" value="{{ old('wali_nik', $santri->wali?->nik) }}" maxlength="16"
                                     class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring focus:ring-green-200"
                                     placeholder="16 digit NIK">
                             </div>
@@ -264,7 +283,7 @@
                                     <i class="fas fa-envelope mr-1 text-green-600"></i>
                                     Email Wali (Opsional)
                                 </label>
-                                <input type="email" name="wali_email" value="{{ old('wali_email') }}"
+                                <input type="email" name="wali_email" value="{{ old('wali_email', $santri->wali?->user?->email) }}"
                                     class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring focus:ring-green-200"
                                     placeholder="wali@example.com">
                             </div>
@@ -275,7 +294,7 @@
                                     <i class="fas fa-phone mr-1 text-green-600"></i>
                                     Nomor HP Wali
                                 </label>
-                                <input type="tel" name="wali_phone" value="{{ old('wali_phone') }}"
+                                <input type="tel" name="wali_phone" value="{{ old('wali_phone', $santri->wali?->user?->phone) }}"
                                     class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring focus:ring-green-200"
                                     placeholder="08123456789">
                             </div>
@@ -286,7 +305,7 @@
                                     <i class="fas fa-briefcase mr-1 text-green-600"></i>
                                     Pekerjaan (Opsional)
                                 </label>
-                                <input type="text" name="wali_occupation" value="{{ old('wali_occupation') }}"
+                                <input type="text" name="wali_occupation" value="{{ old('wali_occupation', $santri->wali?->occupation) }}"
                                     class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring focus:ring-green-200"
                                     placeholder="Contoh: Guru, Wiraswasta">
                             </div>
@@ -299,7 +318,7 @@
                                 </label>
                                 <textarea name="wali_address" rows="2"
                                     class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring focus:ring-green-200"
-                                    placeholder="Sama dengan alamat santri atau berbeda">{{ old('wali_address') }}</textarea>
+                                    placeholder="Sama dengan alamat santri atau berbeda">{{ old('wali_address', $santri->wali?->address) }}</textarea>
                             </div>
                         </div>
                     </div>

@@ -32,6 +32,16 @@ class UpdateSantriRequest extends FormRequest
             'address' => ['required', 'string', 'max:500'],
             'entry_date' => ['required', 'date', 'before_or_equal:today'],
             'status' => ['required', 'in:pending,active,inactive,graduated'],
+            
+            // Wali fields
+            'wali_id' => ['nullable', 'exists:wali_profiles,id'],
+            'wali_name' => ['nullable', 'string', 'max:255'],
+            'wali_email' => ['nullable', 'email'],
+            'wali_phone' => ['nullable', 'string', 'max:20'],
+            'wali_nik' => ['nullable', 'string', 'max:16'],
+            'wali_relation' => ['nullable', 'in:ayah,ibu,wali'],
+            'wali_occupation' => ['nullable', 'string', 'max:255'],
+            'wali_address' => ['nullable', 'string', 'max:500'],
         ];
     }
 }

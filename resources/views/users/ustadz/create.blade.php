@@ -20,6 +20,42 @@
         <form action="{{ route('users.ustadz.store') }}" method="POST" class="space-y-6">
             @csrf
 
+            <!-- Pesantren Selection (Super Admin Only) -->
+            @if (auth()->user()->isSuperAdmin() && $pesantrens && $pesantrens->count() > 0)
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="flex items-center mb-6">
+                        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white mr-4">
+                            <i class="fas fa-building text-2xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-900">Pilih Pesantren</h3>
+                            <p class="text-sm text-gray-600">Tentukan pesantren tempat ustadz mengajar</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-mosque mr-1 text-blue-600"></i>
+                            Pesantren <span class="text-red-500">*</span>
+                        </label>
+                        <select name="pesantren_id" required
+                            class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 @error('pesantren_id') border-red-500 @enderror">
+                            <option value="">Pilih Pesantren</option>
+                            @forelse ($pesantrens as $pesantren)
+                                <option value="{{ $pesantren->id }}" {{ old('pesantren_id') == $pesantren->id ? 'selected' : '' }}>
+                                    {{ $pesantren->name }} ({{ $pesantren->code }})
+                                </option>
+                            @empty
+                                <option disabled>Tidak ada pesantren aktif</option>
+                            @endforelse
+                        </select>
+                        @error('pesantren_id')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+            @endif
+
             <!-- Data Ustadz Section -->
             <div class="bg-white rounded-xl shadow-lg p-6">
                 <div class="flex items-center mb-6">

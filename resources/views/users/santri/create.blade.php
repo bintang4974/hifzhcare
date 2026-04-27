@@ -20,6 +20,41 @@
         <form action="{{ route('users.santri.store') }}" method="POST" class="space-y-6" id="santri-form">
             @csrf
 
+            <!-- Pesantren Selection (Super Admin Only) -->
+            @if (auth()->user()->hasRole('Super Admin') && $pesantrens && $pesantrens->count() > 0)
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="flex items-center mb-6">
+                        <div
+                            class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center text-white mr-4">
+                            <i class="fas fa-mosque text-2xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-900">Pilih Pesantren</h3>
+                            <p class="text-sm text-gray-600">Tentukan pesantren tempat santri akan didaftarkan</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-building mr-1 text-purple-600"></i>
+                            Pesantren <span class="text-red-500">*</span>
+                        </label>
+                        <select name="pesantren_id" required
+                            class="w-full rounded-lg border-gray-300 focus:border-purple-500 focus:ring focus:ring-purple-200 @error('pesantren_id') border-red-500 @enderror">
+                            <option value="">-- Pilih Pesantren --</option>
+                            @foreach ($pesantrens as $pesantren)
+                                <option value="{{ $pesantren->id }}" {{ old('pesantren_id') == $pesantren->id ? 'selected' : '' }}>
+                                    {{ $pesantren->name }} ({{ $pesantren->code }})
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('pesantren_id')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+            @endif
+
             <!-- Data Santri Section -->
             <div class="bg-white rounded-xl shadow-lg p-6">
                 <div class="flex items-center mb-6">

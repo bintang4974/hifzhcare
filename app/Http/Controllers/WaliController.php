@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\User\CreateWaliRequest;
 use App\Http\Requests\User\UpdateWaliRequest;
+use App\Models\Pesantren;
 use App\Models\User;
 use App\Models\WaliProfile;
 use App\Repositories\Contracts\UserRepositoryInterface;
@@ -155,7 +156,14 @@ class WaliController extends Controller
     public function create()
     {
         $this->authorize('create_users');
-        return view('users.wali.create');
+        $pesantrens = null;
+        
+        // If Super Admin, load all active pesantrens for selection
+        if (auth()->user()->isSuperAdmin()) {
+            $pesantrens = Pesantren::where('status', 'active')->get(['id', 'name', 'code']);
+        }
+        
+        return view('users.wali.create', compact('pesantrens'));
     }
 
     /**
@@ -164,7 +172,10 @@ class WaliController extends Controller
     public function store(CreateWaliRequest $request)
     {
         try {
-            $pesantrenId = session('current_pesantren_id') ?? $request->user()->pesantren_id;
+            // Get pesantren_id: from request (Super Admin) or session (Regular Admin)
+            $pesantrenId = auth()->user()->isSuperAdmin() 
+                ? $request->pesantren_id 
+                : (session('current_pesantren_id') ?? $request->user()->pesantren_id);
 
             $userData = [
                 'name' => $request->name,

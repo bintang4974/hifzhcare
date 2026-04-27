@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AppreciationFund;
 use App\Models\Certificate;
 use App\Models\Classes;
 use App\Models\Donation;
@@ -11,6 +12,7 @@ use App\Models\SantriProfile;
 use App\Models\UstadzProfile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class StakeholderReportController extends Controller
 {
@@ -25,7 +27,10 @@ class StakeholderReportController extends Controller
      */
     public function trendAnalysis(Request $request)
     {
-        $pesantrenId = auth()->user()->pesantren_id;
+        $pesantrenId = $this->resolvePesantrenId();
+        if (!$pesantrenId) {
+            abort(403, 'Pesantren tidak ditemukan untuk akun ini.');
+        }
         $months = $request->get('months', 12);
         
         // Calculate trends
@@ -53,7 +58,10 @@ class StakeholderReportController extends Controller
      */
     public function performanceOverview(Request $request)
     {
-        $pesantrenId = auth()->user()->pesantren_id;
+        $pesantrenId = $this->resolvePesantrenId();
+        if (!$pesantrenId) {
+            abort(403, 'Pesantren tidak ditemukan untuk akun ini.');
+        }
         
         // Calculate overall performance
         $performance = $this->calculatePerformanceScore($pesantrenId);
@@ -94,30 +102,38 @@ class StakeholderReportController extends Controller
      */
     public function financialSummary(Request $request)
     {
-        $pesantrenId = auth()->user()->pesantren_id;
+        $pesantrenId = $this->resolvePesantrenId();
+        if (!$pesantrenId) {
+            abort(403, 'Pesantren tidak ditemukan untuk akun ini.');
+        }
+
         $period = $request->get('period', 'year');
+        if (!in_array($period, ['month', 'quarter', 'year', 'all'], true)) {
+            $period = 'year';
+        }
         
         // Get financial data
         $financial = $this->getFinancialData($pesantrenId, $period);
         
         // Get donation status breakdown
-        $donation_status = $this->getDonationStatusBreakdown($pesantrenId);
+        $donation_status = $this->getDonationStatusBreakdown($pesantrenId, $period);
         
         // Get top contributors
-        $top_contributors = $this->getTopContributors($pesantrenId, 10);
+        $top_contributors = $this->getTopContributors($pesantrenId, 10, $period);
         
         // Get top ustadz recipients
-        $top_ustadz = $this->getTopUstadzRecipients($pesantrenId, 10);
+        $top_ustadz = $this->getTopUstadzRecipients($pesantrenId, 10, $period);
         
         // Get chart data
-        $chartData = $this->getFinancialChartData($pesantrenId);
+        $chartData = $this->getFinancialChartData($pesantrenId, $period);
         
         return view('stakeholder.financial-summary', compact(
             'financial',
             'donation_status',
             'top_contributors',
             'top_ustadz',
-            'chartData'
+            'chartData',
+            'period'
         ));
     }
  
@@ -590,94 +606,108 @@ class StakeholderReportController extends Controller
      */
     private function getFinancialData($pesantrenId, $period)
     {
-        $query = Donation::where('pesantren_id', $pesantrenId)
-            ->whereIn('status', ['verified', 'transferred', 'available', 'requested', 'disbursed']);
-        
-        // Apply period filter
-        switch ($period) {
-            case 'month':
-                $query->whereMonth('created_at', now()->month);
-                break;
-            case 'quarter':
-                $query->where('created_at', '>=', now()->subMonths(3));
-                break;
-            case 'year':
-                $query->whereYear('created_at', now()->year);
-                break;
+        if ($this->useLegacyAppreciationFunds($pesantrenId)) {
+            return $this->getLegacyFinancialData($pesantrenId, $period);
         }
-        
+
+        $statuses = $this->financialStatuses();
+
+        $query = Donation::where('pesantren_id', $pesantrenId)
+            ->whereIn('status', $statuses);
+        $this->applyFinancialPeriodFilter($query, $period);
+
         $donations = $query->get();
-        
+
         $totalRevenue = $donations->sum('amount');
         $platformFee = $donations->sum('platform_fee');
         $pesantrenShare = $donations->sum('pesantren_fee');
         $ustadzTotal = $donations->sum('ustadz_net_amount');
-        
+
+        $platformPercentage = $totalRevenue > 0 ? round(($platformFee / $totalRevenue) * 100, 1) : 0;
+        $pesantrenPercentage = $totalRevenue > 0 ? round(($pesantrenShare / $totalRevenue) * 100, 1) : 0;
+        $ustadzPercentage = $totalRevenue > 0 ? round(($ustadzTotal / $totalRevenue) * 100, 1) : 0;
+
         // Previous period for growth calculation
-        $previousQuery = Donation::where('pesantren_id', $pesantrenId)
-            ->whereIn('status', ['verified', 'transferred', 'available', 'requested', 'disbursed']);
-        
-        switch ($period) {
-            case 'month':
-                $previousQuery->whereMonth('created_at', now()->subMonth()->month);
-                break;
-            case 'quarter':
-                $previousQuery->whereBetween('created_at', [now()->subMonths(6), now()->subMonths(3)]);
-                break;
-            case 'year':
-                $previousQuery->whereYear('created_at', now()->subYear()->year);
-                break;
+        $previousRevenue = 0;
+        if ($period !== 'all') {
+            $previousQuery = Donation::where('pesantren_id', $pesantrenId)
+                ->whereIn('status', $statuses);
+            $this->applyPreviousFinancialPeriodFilter($previousQuery, $period);
+            $previousRevenue = $previousQuery->sum('amount');
         }
-        
-        $previousRevenue = $previousQuery->sum('amount');
-        
+
         // Transaction statistics
         $totalTransactions = $donations->count();
-        $successfulTransactions = $donations->whereIn('status', ['disbursed'])->count();
-        $pendingDonations = Donation::where('pesantren_id', $pesantrenId)
-            ->whereIn('status', ['pending', 'verified'])->get();
-        
+        $processedTransactions = $donations->whereIn('status', ['verified', 'transferred', 'available', 'requested', 'disbursed'])->count();
+        $pendingDonations = $donations->where('status', 'pending');
+
+        $disbursableTransactions = $donations->whereIn('status', ['available', 'requested', 'disbursed'])->count();
+        $disbursedTransactions = $donations->where('status', 'disbursed')->count();
+
+        $monthsDivisor = match ($period) {
+            'month' => 1,
+            'quarter' => 3,
+            'year' => 12,
+            default => max($donations->groupBy(fn($d) => $d->created_at->format('Y-m'))->count(), 1),
+        };
+
+        $collectionRate = $totalTransactions > 0 ? round(($processedTransactions / $totalTransactions) * 100, 1) : 0;
+        $disbursementRate = $disbursableTransactions > 0 ? round(($disbursedTransactions / $disbursableTransactions) * 100, 1) : 0;
+        $cashFlowScore = round(($collectionRate * 0.6) + ($disbursementRate * 0.4), 1);
+
         return [
             'total_revenue' => $totalRevenue,
             'platform_fee' => $platformFee,
             'pesantren_share' => $pesantrenShare,
             'ustadz_total' => $ustadzTotal,
-            'revenue_growth' => $this->calculateGrowth($totalRevenue, $previousRevenue),
-            'monthly_avg' => $period === 'year' ? $totalRevenue / 12 : $totalRevenue,
+            'platform_percentage' => $platformPercentage,
+            'pesantren_percentage' => $pesantrenPercentage,
+            'ustadz_percentage' => $ustadzPercentage,
+            'revenue_growth' => $period === 'all' ? 0 : $this->calculateGrowth($totalRevenue, $previousRevenue),
+            'monthly_avg' => $monthsDivisor > 0 ? ($totalRevenue / $monthsDivisor) : 0,
             'highest_month' => $donations->groupBy(function($d) {
                 return $d->created_at->format('Y-m');
             })->map->sum('amount')->max() ?? 0,
             'total_transactions' => $totalTransactions,
-            'success_rate' => $totalTransactions > 0 ? round(($successfulTransactions / $totalTransactions) * 100, 1) : 0,
+            'success_rate' => $totalTransactions > 0 ? round(($donations->where('status', 'disbursed')->count() / $totalTransactions) * 100, 1) : 0,
             'avg_donation' => $totalTransactions > 0 ? $totalRevenue / $totalTransactions : 0,
             'pending_count' => $pendingDonations->count(),
             'pending_amount' => $pendingDonations->sum('amount'),
-            'cash_flow_score' => 85,
-            'collection_rate' => 92,
-            'disbursement_rate' => 78,
+            'cash_flow_score' => $cashFlowScore,
+            'collection_rate' => $collectionRate,
+            'disbursement_rate' => $disbursementRate,
         ];
     }
  
     /**
      * Get donation status breakdown
      */
-    private function getDonationStatusBreakdown($pesantrenId)
+    private function getDonationStatusBreakdown($pesantrenId, $period = 'year')
     {
+        if ($this->useLegacyAppreciationFunds($pesantrenId)) {
+            return $this->getLegacyDonationStatusBreakdown($pesantrenId, $period);
+        }
+
         $statuses = [
             'pending' => ['label' => 'Pending Verification', 'icon' => 'clock', 'color' => 'yellow'],
             'verified' => ['label' => 'Verified', 'icon' => 'check', 'color' => 'blue'],
+            'transferred' => ['label' => 'Transferred', 'icon' => 'exchange-alt', 'color' => 'indigo'],
             'available' => ['label' => 'Available', 'icon' => 'wallet', 'color' => 'green'],
             'requested' => ['label' => 'Withdrawal Requested', 'icon' => 'hand-holding-usd', 'color' => 'orange'],
             'disbursed' => ['label' => 'Disbursed', 'icon' => 'check-double', 'color' => 'purple'],
         ];
-        
-        $totalAmount = Donation::where('pesantren_id', $pesantrenId)->sum('amount');
-        
+
+        $baseQuery = Donation::where('pesantren_id', $pesantrenId)
+            ->whereIn('status', $this->financialStatuses());
+        $this->applyFinancialPeriodFilter($baseQuery, $period);
+        $allDonations = $baseQuery->get();
+
+        $totalAmount = $allDonations->sum('amount');
+
         $result = [];
         foreach ($statuses as $status => $info) {
-            $donations = Donation::where('pesantren_id', $pesantrenId)
-                ->where('status', $status)->get();
-            
+            $donations = $allDonations->where('status', $status);
+
             $result[] = array_merge($info, [
                 'count' => $donations->count(),
                 'amount' => $donations->sum('amount'),
@@ -691,35 +721,59 @@ class StakeholderReportController extends Controller
     /**
      * Get top contributors
      */
-    private function getTopContributors($pesantrenId, $limit = 10)
+    private function getTopContributors($pesantrenId, $limit = 10, $period = 'year')
     {
-        return Donation::where('pesantren_id', $pesantrenId)
+        if ($this->useLegacyAppreciationFunds($pesantrenId)) {
+            return $this->getLegacyTopContributors($pesantrenId, $limit, $period);
+        }
+
+        $query = Donation::where('pesantren_id', $pesantrenId)
+            ->whereIn('status', $this->financialStatuses())
+            ->whereNotNull('wali_id')
             ->with('wali.user')
-            ->select('wali_id', DB::raw('SUM(amount) as total_amount'), DB::raw('COUNT(*) as transaction_count'))
+            ->select(
+                'wali_id',
+                DB::raw('SUM(amount) as total_amount'),
+                DB::raw('COUNT(*) as transaction_count'),
+                DB::raw('MAX(created_at) as last_donation_at')
+            )
             ->groupBy('wali_id')
             ->orderByDesc('total_amount')
-            ->limit($limit)
-            ->get()
+            ->limit($limit);
+
+        $this->applyFinancialPeriodFilter($query, $period);
+
+        return $query->get()
             ->map(function($donation) {
+                if (!$donation->wali || !$donation->wali->user) {
+                    return null;
+                }
+
                 return [
                     'name' => $donation->wali->user->name,
                     'email' => $donation->wali->user->email,
                     'total_amount' => $donation->total_amount,
                     'transaction_count' => $donation->transaction_count,
                     'avg_amount' => $donation->total_amount / $donation->transaction_count,
-                    'last_donation' => Donation::where('wali_id', $donation->wali_id)
-                        ->latest()->first()->created_at->format('d M Y'),
+                    'last_donation' => $donation->last_donation_at ? date('d M Y', strtotime($donation->last_donation_at)) : '-',
                 ];
             })
+            ->filter()
+            ->values()
             ->toArray();
     }
  
     /**
      * Get top ustadz recipients
      */
-    private function getTopUstadzRecipients($pesantrenId, $limit = 10)
+    private function getTopUstadzRecipients($pesantrenId, $limit = 10, $period = 'year')
     {
-        return Donation::where('pesantren_id', $pesantrenId)
+        if ($this->useLegacyAppreciationFunds($pesantrenId)) {
+            return $this->getLegacyTopUstadzRecipients($pesantrenId, $limit, $period);
+        }
+
+        $query = Donation::where('pesantren_id', $pesantrenId)
+            ->whereNotNull('ustadz_id')
             ->with('ustadz.user', 'ustadz.activeClassesRelation')
             ->select('ustadz_id', 
                 DB::raw('SUM(ustadz_net_amount) as total_received'),
@@ -727,10 +781,18 @@ class StakeholderReportController extends Controller
             ->whereIn('status', ['available', 'requested', 'disbursed'])
             ->groupBy('ustadz_id')
             ->orderByDesc('total_received')
-            ->limit($limit)
-            ->get()
+            ->limit($limit);
+
+        $this->applyFinancialPeriodFilter($query, $period);
+
+        return $query->get()
             ->map(function($donation) {
+                if (!$donation->ustadz || !$donation->ustadz->user) {
+                    return null;
+                }
+
                 $disbursed = Donation::where('ustadz_id', $donation->ustadz_id)
+                    ->where('pesantren_id', $donation->ustadz->pesantren_id)
                     ->where('status', 'disbursed')
                     ->sum('ustadz_net_amount');
                 
@@ -747,26 +809,39 @@ class StakeholderReportController extends Controller
                     'disbursed' => $disbursed,
                 ];
             })
+            ->filter()
+            ->values()
             ->toArray();
     }
  
     /**
      * Get financial chart data
      */
-    private function getFinancialChartData($pesantrenId)
+    private function getFinancialChartData($pesantrenId, $period = 'year')
     {
+        if ($this->useLegacyAppreciationFunds($pesantrenId)) {
+            return $this->getLegacyFinancialChartData($pesantrenId, $period);
+        }
+
         $months = [];
         $monthlyRevenue = [];
-        
-        for ($i = 11; $i >= 0; $i--) {
+
+        $monthsBack = match ($period) {
+            'month' => 1,
+            'quarter' => 3,
+            default => 12,
+        };
+
+        for ($i = $monthsBack - 1; $i >= 0; $i--) {
             $date = now()->subMonths($i);
             $months[] = $date->format('M Y');
-            
+
             $revenue = Donation::where('pesantren_id', $pesantrenId)
+                ->whereIn('status', $this->financialStatuses())
                 ->whereYear('created_at', $date->year)
                 ->whereMonth('created_at', $date->month)
                 ->sum('amount');
-            
+
             $monthlyRevenue[] = $revenue;
         }
         
@@ -777,6 +852,310 @@ class StakeholderReportController extends Controller
     }
  
     // ==================== UTILITY METHODS ====================
+
+    private function resolvePesantrenId()
+    {
+        return session('current_pesantren_id') ?? Auth::user()?->pesantren_id;
+    }
+
+    private function financialStatuses()
+    {
+        return ['pending', 'verified', 'transferred', 'available', 'requested', 'disbursed'];
+    }
+
+    private function applyFinancialPeriodFilter($query, $period)
+    {
+        switch ($period) {
+            case 'month':
+                $query->whereYear('created_at', now()->year)
+                    ->whereMonth('created_at', now()->month);
+                break;
+            case 'quarter':
+                $query->whereBetween('created_at', [
+                    now()->startOfMonth()->subMonths(2),
+                    now()->endOfMonth(),
+                ]);
+                break;
+            case 'year':
+                $query->whereYear('created_at', now()->year);
+                break;
+            default:
+                break;
+        }
+    }
+
+    private function applyPreviousFinancialPeriodFilter($query, $period)
+    {
+        switch ($period) {
+            case 'month':
+                $lastMonth = now()->subMonth();
+                $query->whereYear('created_at', $lastMonth->year)
+                    ->whereMonth('created_at', $lastMonth->month);
+                break;
+            case 'quarter':
+                $query->whereBetween('created_at', [
+                    now()->startOfMonth()->subMonths(5),
+                    now()->startOfMonth()->subMonths(3)->endOfMonth(),
+                ]);
+                break;
+            case 'year':
+                $query->whereYear('created_at', now()->subYear()->year);
+                break;
+            default:
+                break;
+        }
+    }
+
+    private function useLegacyAppreciationFunds($pesantrenId)
+    {
+        $hasDonationData = Donation::where('pesantren_id', $pesantrenId)->exists();
+        $hasLegacyData = AppreciationFund::where('pesantren_id', $pesantrenId)->exists();
+
+        return !$hasDonationData && $hasLegacyData;
+    }
+
+    private function getLegacyFinancialData($pesantrenId, $period)
+    {
+        $query = AppreciationFund::where('pesantren_id', $pesantrenId);
+        $this->applyLegacyPeriodFilter($query, $period);
+        $funds = $query->get();
+
+        $totalRevenue = $funds->sum('amount');
+        $platformFee = $totalRevenue * 0.03;
+        $pesantrenShare = $totalRevenue * 0.10;
+        $ustadzTotal = max(0, $totalRevenue - $platformFee - $pesantrenShare);
+
+        $previousRevenue = 0;
+        if ($period !== 'all') {
+            $previousQuery = AppreciationFund::where('pesantren_id', $pesantrenId);
+            $this->applyLegacyPreviousPeriodFilter($previousQuery, $period);
+            $previousRevenue = $previousQuery->sum('amount');
+        }
+
+        $totalTransactions = $funds->count();
+        $processedTransactions = $funds->whereIn('status', ['verified', 'disbursed'])->count();
+        $pendingFunds = $funds->where('status', 'pending');
+        $disbursedTransactions = $funds->where('status', 'disbursed')->count();
+
+        $monthsDivisor = match ($period) {
+            'month' => 1,
+            'quarter' => 3,
+            'year' => 12,
+            default => max($funds->groupBy(fn($f) => $f->created_at->format('Y-m'))->count(), 1),
+        };
+
+        $platformPercentage = $totalRevenue > 0 ? round(($platformFee / $totalRevenue) * 100, 1) : 0;
+        $pesantrenPercentage = $totalRevenue > 0 ? round(($pesantrenShare / $totalRevenue) * 100, 1) : 0;
+        $ustadzPercentage = $totalRevenue > 0 ? round(($ustadzTotal / $totalRevenue) * 100, 1) : 0;
+
+        $collectionRate = $totalTransactions > 0 ? round(($processedTransactions / $totalTransactions) * 100, 1) : 0;
+        $disbursementRate = $totalTransactions > 0 ? round(($disbursedTransactions / $totalTransactions) * 100, 1) : 0;
+        $cashFlowScore = round(($collectionRate * 0.6) + ($disbursementRate * 0.4), 1);
+
+        return [
+            'total_revenue' => $totalRevenue,
+            'platform_fee' => $platformFee,
+            'pesantren_share' => $pesantrenShare,
+            'ustadz_total' => $ustadzTotal,
+            'platform_percentage' => $platformPercentage,
+            'pesantren_percentage' => $pesantrenPercentage,
+            'ustadz_percentage' => $ustadzPercentage,
+            'revenue_growth' => $period === 'all' ? 0 : $this->calculateGrowth($totalRevenue, $previousRevenue),
+            'monthly_avg' => $monthsDivisor > 0 ? ($totalRevenue / $monthsDivisor) : 0,
+            'highest_month' => $funds->groupBy(function($f) {
+                return $f->created_at->format('Y-m');
+            })->map->sum('amount')->max() ?? 0,
+            'total_transactions' => $totalTransactions,
+            'success_rate' => $totalTransactions > 0 ? round(($disbursedTransactions / $totalTransactions) * 100, 1) : 0,
+            'avg_donation' => $totalTransactions > 0 ? ($totalRevenue / $totalTransactions) : 0,
+            'pending_count' => $pendingFunds->count(),
+            'pending_amount' => $pendingFunds->sum('amount'),
+            'cash_flow_score' => $cashFlowScore,
+            'collection_rate' => $collectionRate,
+            'disbursement_rate' => $disbursementRate,
+        ];
+    }
+
+    private function getLegacyDonationStatusBreakdown($pesantrenId, $period = 'year')
+    {
+        $statuses = [
+            'pending' => ['label' => 'Pending Verification', 'icon' => 'clock', 'color' => 'yellow'],
+            'verified' => ['label' => 'Verified', 'icon' => 'check', 'color' => 'blue'],
+            'transferred' => ['label' => 'Transferred', 'icon' => 'exchange-alt', 'color' => 'indigo'],
+            'available' => ['label' => 'Available', 'icon' => 'wallet', 'color' => 'green'],
+            'requested' => ['label' => 'Withdrawal Requested', 'icon' => 'hand-holding-usd', 'color' => 'orange'],
+            'disbursed' => ['label' => 'Disbursed', 'icon' => 'check-double', 'color' => 'purple'],
+        ];
+
+        $query = AppreciationFund::where('pesantren_id', $pesantrenId);
+        $this->applyLegacyPeriodFilter($query, $period);
+        $allFunds = $query->get();
+
+        $totalAmount = $allFunds->sum('amount');
+
+        return collect($statuses)->map(function ($info, $status) use ($allFunds, $totalAmount) {
+            $fundsByStatus = $allFunds->where('status', $status);
+
+            return array_merge($info, [
+                'count' => $fundsByStatus->count(),
+                'amount' => $fundsByStatus->sum('amount'),
+                'percentage' => $totalAmount > 0 ? round(($fundsByStatus->sum('amount') / $totalAmount) * 100, 1) : 0,
+            ]);
+        })->values()->toArray();
+    }
+
+    private function getLegacyTopContributors($pesantrenId, $limit = 10, $period = 'year')
+    {
+        $query = AppreciationFund::where('pesantren_id', $pesantrenId)
+            ->whereNotNull('wali_profile_id')
+            ->with('wali.user')
+            ->select(
+                'wali_profile_id',
+                DB::raw('SUM(amount) as total_amount'),
+                DB::raw('COUNT(*) as transaction_count'),
+                DB::raw('MAX(created_at) as last_donation_at')
+            )
+            ->groupBy('wali_profile_id')
+            ->orderByDesc('total_amount')
+            ->limit($limit);
+
+        $this->applyLegacyPeriodFilter($query, $period);
+
+        return $query->get()
+            ->map(function ($fund) {
+                if (!$fund->wali || !$fund->wali->user) {
+                    return null;
+                }
+
+                return [
+                    'name' => $fund->wali->user->name,
+                    'email' => $fund->wali->user->email,
+                    'total_amount' => $fund->total_amount,
+                    'transaction_count' => $fund->transaction_count,
+                    'avg_amount' => $fund->transaction_count > 0 ? ($fund->total_amount / $fund->transaction_count) : 0,
+                    'last_donation' => $fund->last_donation_at ? date('d M Y', strtotime($fund->last_donation_at)) : '-',
+                ];
+            })
+            ->filter()
+            ->values()
+            ->toArray();
+    }
+
+    private function getLegacyTopUstadzRecipients($pesantrenId, $limit = 10, $period = 'year')
+    {
+        $query = AppreciationFund::where('pesantren_id', $pesantrenId)
+            ->whereNotNull('ustadz_profile_id')
+            ->with('ustadz.user', 'ustadz.activeClassesRelation')
+            ->select(
+                'ustadz_profile_id',
+                DB::raw('SUM(amount) as total_received'),
+                DB::raw('COUNT(*) as donation_count')
+            )
+            ->groupBy('ustadz_profile_id')
+            ->orderByDesc('total_received')
+            ->limit($limit);
+
+        $this->applyLegacyPeriodFilter($query, $period);
+
+        return $query->get()
+            ->map(function ($fund) use ($pesantrenId, $period) {
+                if (!$fund->ustadz || !$fund->ustadz->user) {
+                    return null;
+                }
+
+                $disbursedQuery = AppreciationFund::where('pesantren_id', $pesantrenId)
+                    ->where('ustadz_profile_id', $fund->ustadz_profile_id)
+                    ->where('status', 'disbursed');
+
+                $this->applyLegacyPeriodFilter($disbursedQuery, $period);
+                $disbursed = $disbursedQuery->sum('amount');
+
+                $classNames = $fund->ustadz->activeClassesRelation->pluck('name')->implode(', ') ?: '-';
+
+                return [
+                    'name' => $fund->ustadz->user->name,
+                    'class' => $classNames,
+                    'total_received' => $fund->total_received,
+                    'donation_count' => $fund->donation_count,
+                    'disbursed' => $disbursed,
+                ];
+            })
+            ->filter()
+            ->values()
+            ->toArray();
+    }
+
+    private function getLegacyFinancialChartData($pesantrenId, $period = 'year')
+    {
+        $months = [];
+        $monthlyRevenue = [];
+
+        $monthsBack = match ($period) {
+            'month' => 1,
+            'quarter' => 3,
+            default => 12,
+        };
+
+        for ($i = $monthsBack - 1; $i >= 0; $i--) {
+            $date = now()->subMonths($i);
+            $months[] = $date->format('M Y');
+
+            $revenue = AppreciationFund::where('pesantren_id', $pesantrenId)
+                ->whereYear('created_at', $date->year)
+                ->whereMonth('created_at', $date->month)
+                ->sum('amount');
+
+            $monthlyRevenue[] = $revenue;
+        }
+
+        return [
+            'months' => $months,
+            'monthly_revenue' => $monthlyRevenue,
+        ];
+    }
+
+    private function applyLegacyPeriodFilter($query, $period)
+    {
+        switch ($period) {
+            case 'month':
+                $query->whereYear('created_at', now()->year)
+                    ->whereMonth('created_at', now()->month);
+                break;
+            case 'quarter':
+                $query->whereBetween('created_at', [
+                    now()->startOfMonth()->subMonths(2),
+                    now()->endOfMonth(),
+                ]);
+                break;
+            case 'year':
+                $query->whereYear('created_at', now()->year);
+                break;
+            default:
+                break;
+        }
+    }
+
+    private function applyLegacyPreviousPeriodFilter($query, $period)
+    {
+        switch ($period) {
+            case 'month':
+                $lastMonth = now()->subMonth();
+                $query->whereYear('created_at', $lastMonth->year)
+                    ->whereMonth('created_at', $lastMonth->month);
+                break;
+            case 'quarter':
+                $query->whereBetween('created_at', [
+                    now()->startOfMonth()->subMonths(5),
+                    now()->startOfMonth()->subMonths(3)->endOfMonth(),
+                ]);
+                break;
+            case 'year':
+                $query->whereYear('created_at', now()->subYear()->year);
+                break;
+            default:
+                break;
+        }
+    }
  
     private function calculateGrowth($current, $previous)
     {

@@ -6,6 +6,7 @@ use App\Models\Donation;
 use App\Models\DonationSetting;
 use App\Models\UstadzProfile;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class DonationController extends Controller
 {
@@ -20,7 +21,7 @@ class DonationController extends Controller
      */
     public function create()
     {
-        $wali = auth()->user()->waliProfile;
+        $wali = Auth::user()->waliProfile;
 
         if (!$wali) {
             return redirect()->route('dashboard')
@@ -38,12 +39,20 @@ class DonationController extends Controller
             ->unique('id');
 
         // Get donation settings
-        $settings = DonationSetting::where('pesantren_id', auth()->user()->pesantren_id)
-            ->first();
+        $settings = DonationSetting::firstOrCreate(
+            ['pesantren_id' => Auth::user()->pesantren_id],
+            [
+                'platform_fee_percentage' => 3,
+                'pesantren_fee_percentage' => 10,
+                'minimum_withdrawal' => 50000,
+                'auto_approve_withdrawal' => false,
+                'donation_enabled' => true,
+            ]
+        );
 
-        if (!$settings || !$settings->donation_enabled) {
+        if (!$settings->donation_enabled) {
             return redirect()->route('dashboard')
-                ->with('error', 'Fitur donasi belum diaktifkan untuk pesantren ini.');
+                ->with('error', $settings->donation_message ?: 'Fitur donasi belum diaktifkan untuk pesantren ini.');
         }
 
         return view('donations.wali.create', compact('ustadzList', 'settings'));
@@ -65,7 +74,7 @@ class DonationController extends Controller
             'payment_proof.required' => 'Bukti transfer wajib diupload',
         ]);
 
-        $wali = auth()->user()->waliProfile;
+        $wali = Auth::user()->waliProfile;
 
         // Get ustadz
         $ustadz = UstadzProfile::findOrFail($validated['ustadz_id']);
@@ -91,7 +100,7 @@ class DonationController extends Controller
             'wali_id' => $wali->id,
             'ustadz_id' => $validated['ustadz_id'],
             'santri_id' => $santriId,
-            'pesantren_id' => auth()->user()->pesantren_id,
+            'pesantren_id' => Auth::user()->pesantren_id,
             'amount' => $validated['amount'],
             'payment_method' => 'transfer',
             'payment_proof' => $proofPath,
@@ -108,7 +117,7 @@ class DonationController extends Controller
      */
     public function index()
     {
-        $wali = auth()->user()->waliProfile;
+        $wali = Auth::user()->waliProfile;
 
         $donations = Donation::where('wali_id', $wali->id)
             ->with(['ustadz.user', 'verifiedBy'])
@@ -124,7 +133,7 @@ class DonationController extends Controller
     public function show($id)
     {
         $donation = Donation::with(['ustadz.user', 'verifiedBy', 'transferredBy'])
-            ->where('wali_id', auth()->user()->waliProfile->id)
+            ->where('wali_id', Auth::user()->waliProfile->id)
             ->findOrFail($id);
 
         return view('donations.wali.show', compact('donation'));

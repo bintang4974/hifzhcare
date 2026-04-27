@@ -80,6 +80,58 @@
                 </div>
             </div>
 
+            <!-- Donation Settings -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center mb-6">
+                    <div
+                        class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center text-white mr-4">
+                        <i class="fas fa-hand-holding-heart text-2xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900">Pengaturan Donasi</h3>
+                        <p class="text-sm text-gray-600">Enable/disable fitur dana donasi per pesantren</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 gap-6">
+                    <div class="rounded-lg border border-gray-200 p-4">
+                        <div class="flex items-start justify-between gap-4">
+                            <label class="flex items-center cursor-pointer">
+                                <input type="checkbox" name="donation_enabled" value="1"
+                                    {{ old('donation_enabled', $donationSetting->donation_enabled ?? false) ? 'checked' : '' }}
+                                    class="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 mr-3">
+                                <div>
+                                    <span class="font-medium text-gray-900">Aktifkan Fitur Donasi</span>
+                                    <p class="text-xs text-gray-600">Jika nonaktif, wali tidak dapat membuat donasi baru di pesantren ini.</p>
+                                </div>
+                            </label>
+
+                            <span
+                                class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold {{ ($donationSetting->donation_enabled ?? false) ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700' }}">
+                                <i class="fas {{ ($donationSetting->donation_enabled ?? false) ? 'fa-check-circle' : 'fa-times-circle' }} mr-1"></i>
+                                {{ ($donationSetting->donation_enabled ?? false) ? 'Enabled' : 'Disabled' }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Pesan Saat Donasi Dinonaktifkan (Opsional)
+                        </label>
+                        <textarea name="donation_message" rows="3"
+                            @class([
+                                'w-full rounded-lg focus:border-emerald-500 focus:ring focus:ring-emerald-200',
+                                'border-red-500' => $errors->has('donation_message'),
+                                'border-gray-300' => !$errors->has('donation_message'),
+                            ])
+                            placeholder="Contoh: Donasi sementara ditutup sampai periode administrasi selesai.">{{ old('donation_message', $donationSetting->donation_message ?? '') }}</textarea>
+                        @error('donation_message')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+            </div>
+
             <!-- Hafalan Settings -->
             <div class="bg-white rounded-xl shadow-lg p-6">
                 <div class="flex items-center mb-6">
@@ -139,7 +191,7 @@
                                 class="rounded border-gray-300 text-purple-600 focus:ring-purple-500 mr-3">
                             <div>
                                 <span class="font-medium text-gray-900">Auto-Verify Hafalan</span>
-                                <p class="text-xs text-gray-600 text-red-500">Tidak direkomendasikan - hafalan otomatis
+                                <p class="text-xs text-red-500">Tidak direkomendasikan - hafalan otomatis
                                     terverifikasi tanpa review ustadz</p>
                             </div>
                         </label>

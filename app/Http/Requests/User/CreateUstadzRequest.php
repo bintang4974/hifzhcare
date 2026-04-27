@@ -19,9 +19,17 @@ class CreateUstadzRequest extends FormRequest
      */
     public function rules(): array
     {
-        $pesantrenId = session('current_pesantren_id');
+        // Get pesantren_id: from request (Super Admin) or session (Regular Admin)
+        $pesantrenId = $this->user()->isSuperAdmin() 
+            ? $this->pesantren_id 
+            : session('current_pesantren_id');
 
         return [
+            // Pesantren selection (Super Admin only)
+            'pesantren_id' => $this->user()->isSuperAdmin() 
+                ? ['required', 'exists:pesantrens,id'] 
+                : ['nullable'],
+
             // User data
             'name' => ['required', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
@@ -52,6 +60,7 @@ class CreateUstadzRequest extends FormRequest
     public function attributes(): array
     {
         return [
+            'pesantren_id' => 'pesantren',
             'name' => 'nama lengkap',
             'email' => 'email',
             'phone' => 'nomor HP',
@@ -69,6 +78,9 @@ class CreateUstadzRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'pesantren_id.required' => 'Pesantren wajib dipilih.',
+            'pesantren_id.exists' => 'Pesantren yang dipilih tidak valid.',
+
             'name.required' => 'Nama lengkap wajib diisi.',
             'name.max' => 'Nama lengkap maksimal 255 karakter.',
 
@@ -94,9 +106,11 @@ class CreateUstadzRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
-        // Auto-fill pesantren_id from session
-        $this->merge([
-            'pesantren_id' => session('current_pesantren_id'),
-        ]);
+        // Auto-fill pesantren_id from session only for non-Super Admin
+        if (!$this->user()->isSuperAdmin()) {
+            $this->merge([
+                'pesantren_id' => session('current_pesantren_id'),
+            ]);
+        }
     }
 }

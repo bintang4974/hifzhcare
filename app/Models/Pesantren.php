@@ -14,10 +14,14 @@ class Pesantren extends Model
 
     protected $fillable = [
         'name',
+        'code',
         'slug',
         'email',
         'phone',
+        'whatsapp',
+        'website',
         'address',
+        'description',
         'logo_url',
         'status',
         'subscription_tier',
@@ -27,6 +31,7 @@ class Pesantren extends Model
         'audio_storage_used',
         'subscription_expired_at',
         'activated_at',
+        'established_year',
     ];
 
     protected $casts = [
